@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin IKU | Panel</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: white; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; color: #333; padding: 30px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        h2 { border-bottom: 2px solid #ffcc00; padding-bottom: 10px; margin-bottom: 20px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn-save { background: #ffcc00; border: none; padding: 15px; font-weight: bold; width: 100%; cursor: pointer; border-radius: 6px; }
+        .btn-google { background: #4285F4; color: white; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        #admin-panel { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div id="login-screen">
+            <h2>Acceso Administrativo</h2>
+            <button class="btn-google" id="login-btn">Entrar con Google</button>
+        </div>
+
+        <div id="admin-panel">
+            <h2>Nuevo Plato IKU</h2>
+            <form id="menu-form">
+                <input type="text" id="name" placeholder="Nombre (ej: Dumplings)" required>
+                <input type="number" id="price" placeholder="Precio (ej: 15000)" required>
+                <select id="category">
+                    <option value="diario">Menú del Día</option>
+                    <option value="rapida">Comidas Rápidas</option>
+                    <option value="varios">Varios</option>
+                </select>
+                <textarea id="desc" placeholder="Descripción corta"></textarea>
+                <input type="text" id="ingredients" placeholder="Ingredientes (separados por coma)">
+                <button type="submit" class="btn-save">GUARDAR EN EL MENÚ</button>
+            </form>
+            <button onclick="logout()" style="margin-top:20px; background:none; border:none; color:red; cursor:pointer;">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from './firebase-config.js';
+        import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+
+        const correosAutorizados = ["CB01GRUPO@gmail.com"];["kelly.araujotafur@gmail.com"] // ¡Agrega aquí los de tus socios!
+
+        const loginBtn = document.getElementById('login-btn');
+        const adminPanel = document.getElementById('admin-panel');
+        const loginScreen = document.getElementById('login-screen');
+
+        loginBtn.onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && correosAutorizados.includes(user.email)) {
+                adminPanel.style.display = 'block';
+                loginScreen.style.display = 'none';
+            } else {
+                if(user) { alert("Sin permisos"); signOut(auth); }
+                adminPanel.style.display = 'none';
+                loginScreen.style.display = 'block';
+            }
+        });
+
+        document.getElementById('menu-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await addDoc(collection(db, "platos"), {
+                    nombre: document.getElementById('name').value,
+                    precio: document.getElementById('price').value,
+                    categoria: document.getElementById('category').value,
+                    descripcion: document.getElementById('desc').value,
+                    ingredientes: document.getElementById('ingredients').value.split(','),
+                    timestamp: serverTimestamp()
+                });
+                alert("¡Guardado!");
+                e.target.reset();
+            } catch (err) { alert("Error: " + err.message); }
+        });
+    </script>
+</body>
+</html>
