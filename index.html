@@ -17,7 +17,7 @@
                 <p class="brand-sub">RESTAURANTE BAR</p>
                 <div class="info-box">
                     <p class="location">📍 Pueblo Bello, Cesar</p>
-                    <p class="schedule">Lun - Dom: 11:00 AM - 10:00 PM</p>
+                    <p class="schedule">Sabor de la Sierra</p>
                 </div>
             </div>
         </aside>
@@ -29,7 +29,7 @@
                 <button class="tab-btn" data-tab="varios">Varios</button>
             </nav>
 
-            <div id="loader" class="loader">Preparando el menú...</div>
+            <div id="loader" class="loader">Preparando delicias...</div>
 
             <section id="diario" class="menu-section active"></section>
             <section id="rapida" class="menu-section"></section>
@@ -38,29 +38,41 @@
     </div>
 
     <div class="cart-fab" onclick="toggleCart()">
-        <span id="cart-count">0</span>🛒
+        <span id="cart-count">0</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
     </div>
 
     <div id="cart-modal" class="cart-modal">
         <div class="cart-header">
             <h3>Tu Pedido</h3>
-            <button class="close-cart" onclick="toggleCart()">×</button>
+            <button class="close-cart" onclick="toggleCart()">&times;</button>
         </div>
+        
         <div class="cart-items-list" id="cart-items"></div>
+
         <div class="cart-footer">
-            <div class="total-row"><span>Total:</span><span id="cart-total-price">$0</span></div>
+            <div class="total-row">
+                <span>Total:</span>
+                <span id="cart-total-price">$0</span>
+            </div>
+
             <div class="order-form">
                 <select id="tipo-servicio" onchange="ajustarPlaceholder()">
                     <option value="mesa">🍽️ Mesa (Comer aquí)</option>
                     <option value="domicilio">🛵 Domicilio</option>
                 </select>
+
                 <input type="text" id="nombre-cliente" placeholder="Nombre y # de Mesa">
+
                 <div class="whatsapp-check">
                     <input type="checkbox" id="check-whatsapp">
-                    <label for="check-whatsapp">Respaldo por <strong>WhatsApp</strong></label>
+                    <label for="check-whatsapp">Enviar respaldo por WhatsApp</label>
                 </div>
             </div>
-            <button class="btn-send-order" onclick="enviarPedido()">CONFIRMAR PEDIDO</button>
+
+            <button class="btn-send-order" onclick="enviarPedido()">
+                CONFIRMAR PEDIDO
+            </button>
         </div>
     </div>
 
@@ -70,11 +82,7 @@
             const tipo = document.getElementById('tipo-servicio').value;
             const input = document.getElementById('nombre-cliente');
             const checkWA = document.getElementById('check-whatsapp');
-            
-            // Ajustar texto del placeholder
             input.placeholder = (tipo === 'mesa') ? "Nombre y # de Mesa" : "Nombre y Dirección exacta";
-            
-            // Lógica de WhatsApp: Solo marcado por defecto si es domicilio
             checkWA.checked = (tipo === 'domicilio');
         }
     </script>
