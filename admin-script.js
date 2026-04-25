@@ -8,81 +8,70 @@ const correosAutorizados = ["cb01grupo@gmail.com", "kelly.araujotafur@gmail.com"
 const escucharMenu = () => {
     const q = query(collection(db, "platos"), orderBy("timestamp", "desc"));
     onSnapshot(q, (sn) => {
-        const listas = {
-            diario: document.getElementById('lista-diario'),
-            rapida: document.getElementById('lista-rapida'),
-            varios: document.getElementById('lista-varios')
-        };
+        const listas = { diario: document.getElementById('lista-diario'), rapida: document.getElementById('lista-rapida'), varios: document.getElementById('lista-varios') };
         if (!listas.diario) return;
         Object.values(listas).forEach(l => l.innerHTML = '');
-
         sn.docs.forEach(docSnap => {
             const d = docSnap.data();
             const id = docSnap.id;
-            const item = document.createElement('div');
-            item.className = 'plato-item';
             const precio = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(d.precio);
-            item.innerHTML = `
-                <span style="font-weight:500;">${d.nombre}</span>
-                <span style="color:#888;">${precio}</span>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn-icon btn-edit" onclick="prepararEdicion('${id}')">Editar</button>
-                    <button class="btn-icon btn-delete" onclick="borrarPlato('${id}')">Borrar</button>
-                </div>`;
+            const item = document.createElement('div');
+            item.style = "display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; align-items:center;";
+            item.innerHTML = `<span><strong>${d.nombre}</strong> (${precio})</span>
+                <div><button onclick="prepararEdicion('${id}')" style="background:#e0f2fe; border:none; padding:5px 10px; border-radius:4px; color:#0284c7; cursor:pointer;">Editar</button>
+                <button onclick="borrarPlato('${id}')" style="background:#fee2e2; border:none; padding:5px 10px; border-radius:4px; color:#ef4444; cursor:pointer; margin-left:5px;">X</button></div>`;
             if (listas[d.categoria]) listas[d.categoria].appendChild(item);
         });
     });
 };
 
-// --- 2. RENDERIZAR PEDIDOS (PENDIENTES Y ATENDIDOS) ---
+// --- 2. RENDERIZAR PEDIDOS (LA CLAVE DEL CAMBIO) ---
 const escucharPedidos = () => {
     const q = query(collection(db, "pedidos"), orderBy("timestamp", "desc"));
     onSnapshot(q, (sn) => {
-        const contPendientes = document.getElementById('lista-pedidos-realtime');
-        const contAtendidos = document.getElementById('lista-atendidos');
+        const pendientesCont = document.getElementById('lista-pedidos-pendientes');
+        const atendidosCont = document.getElementById('lista-pedidos-atendidos');
         
-        if (!contPendientes || !contAtendidos) return;
+        if (!pendientesCont || !atendidosCont) return;
         
-        contPendientes.innerHTML = '';
-        contAtendidos.innerHTML = '';
+        pendientesCont.innerHTML = '';
+        atendidosCont.innerHTML = '';
 
         sn.docs.forEach(d => {
             const p = d.data();
             const id = d.id;
-            const precioFormateado = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(p.total);
+            const totalFmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(p.total);
 
             if (p.estado === 'pendiente') {
-                // CUADRO GRANDE PARA COCINA
+                // DISEÑO GRANDE PARA COCINA
                 const card = document.createElement('div');
                 card.className = 'pedido-card';
                 card.innerHTML = `
                     <div class="pedido-header">
-                        <h5>👤 ${p.cliente}</h5>
-                        <strong style="color:var(--success); font-size:1.1rem;">${precioFormateado}</strong>
+                        <strong>👤 ${p.cliente}</strong>
+                        <span style="color:var(--success); font-weight:700;">${totalFmt}</span>
                     </div>
                     <ul class="pedido-items">
-                        ${p.items.map(i => `<li><strong>${i.nombre}</strong> ${i.nota ? `<br><small style="color:#666;">📝 ${i.nota}</small>` : ''}</li>`).join('')}
+                        ${p.items.map(i => `<li><strong>${i.nombre}</strong> ${i.nota ? `<br><small>📝 ${i.nota}</small>` : ''}</li>`).join('')}
                     </ul>
-                    <button style="background:var(--success); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%; font-weight:700;" onclick="completarPedido('${id}')">MARCAR COMO LISTO</button>
+                    <button onclick="completarPedido('${id}')" style="background:var(--success); color:white; border:none; padding:10px; width:100%; border-radius:6px; font-weight:bold; cursor:pointer;">LISTO PARA ENTREGAR</button>
                 `;
-                contPendientes.appendChild(card);
+                pendientesCont.appendChild(card);
             } else {
-                // FILA PEQUEÑA PARA ATENDIDOS
+                // DISEÑO PEQUEÑO PARA LA LISTA DE ABAJO
                 const row = document.createElement('div');
-                row.className = 'atendido-item';
+                row.className = 'atendido-row';
                 row.innerHTML = `
-                    <div class="atendido-info">
-                        <span>Mesa/Cliente: <strong>${p.cliente}</strong></span>
-                        <span class="atendido-total">${precioFormateado}</span>
-                    </div>
-                    <button onclick="eliminarPedido('${id}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.8rem; font-weight:600;">BORRAR REGISTRO</button>
+                    <span class="atendido-mesa">Mesa/Cliente: ${p.cliente}</span>
+                    <span class="atendido-valor">${totalFmt}</span>
+                    <button class="btn-borrar-atendido" onclick="eliminarPedido('${id}')">Borrar Registro</button>
                 `;
-                contAtendidos.appendChild(row);
+                atendidosCont.appendChild(row);
             }
         });
 
-        if (contPendientes.innerHTML === '') contPendientes.innerHTML = '<p style="color:#888;">No hay platos en cocina.</p>';
-        if (contAtendidos.innerHTML === '') contAtendidos.innerHTML = '<p style="color:#888; font-size:0.8rem;">Aún no hay pedidos despachados hoy.</p>';
+        if (pendientesCont.innerHTML === '') pendientesCont.innerHTML = '<p style="color:#888;">No hay pedidos en cocina.</p>';
+        if (atendidosCont.innerHTML === '') atendidosCont.innerHTML = '<p style="color:#888; font-size:0.8rem; text-align:center;">Aún no hay despachos.</p>';
     });
 };
 
@@ -90,25 +79,25 @@ const escucharPedidos = () => {
 const escucharEstadisticas = () => {
     const q = query(collection(db, "pedidos"));
     onSnapshot(q, (sn) => {
-        let tHoy = 0, tMes = 0;
+        let hoy = 0, mes = 0;
         const ahora = new Date();
         sn.docs.forEach(d => {
             const p = d.data();
             if (p.estado === 'completado' && p.timestamp) {
                 const f = p.timestamp.toDate();
                 if (f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear()) {
-                    tMes += p.total;
-                    if (f.getDate() === ahora.getDate()) tHoy += p.total;
+                    mes += p.total;
+                    if (f.getDate() === ahora.getDate()) hoy += p.total;
                 }
             }
         });
         const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-        if(document.getElementById('ventas-hoy')) document.getElementById('ventas-hoy').innerText = fmt.format(tHoy);
-        if(document.getElementById('ventas-mes')) document.getElementById('ventas-mes').innerText = fmt.format(tMes);
+        if(document.getElementById('ventas-hoy')) document.getElementById('ventas-hoy').innerText = fmt.format(hoy);
+        if(document.getElementById('ventas-mes')) document.getElementById('ventas-mes').innerText = fmt.format(mes);
     });
 };
 
-// --- LOGICA DE ACCESO Y BOTONES ---
+// --- ACCESO Y FUNCIONES ---
 onAuthStateChanged(auth, (user) => {
     if (user && correosAutorizados.includes(user.email)) {
         document.getElementById('admin-panel').style.display = 'flex';
@@ -159,7 +148,7 @@ window.prepararEdicion = (id) => {
             document.getElementById('desc').value = d.descripcion || '';
             document.getElementById('ingredients').value = d.ingredientes ? d.ingredientes.join(', ') : '';
             document.getElementById('form-title').innerText = "Editando Plato";
-            document.getElementById('submit-btn').innerText = "Actualizar Cambios";
+            document.getElementById('submit-btn').innerText = "ACTUALIZAR CAMBIOS";
             document.getElementById('close-edit-btn').style.display = "block";
             document.querySelector('.content-area').scrollTo({top: 0, behavior: 'smooth'});
         }
@@ -169,7 +158,7 @@ window.prepararEdicion = (id) => {
 window.cancelarEdicion = () => {
     document.getElementById('edit-id').value = "";
     document.getElementById('form-title').innerText = "Añadir Nuevo Plato";
-    document.getElementById('submit-btn').innerText = "Guardar Plato";
+    document.getElementById('submit-btn').innerText = "PUBLICAR PLATO";
     document.getElementById('close-edit-btn').style.display = "none";
     form.reset();
 };
