@@ -48,7 +48,6 @@ function escucharPedidos() {
             p.id = docSnap.id;
             pedidos.push(p);
 
-            // Cálculos Estadísticas Originales
             if(p.timestamp) {
                 const f = p.timestamp.toDate();
                 if(f.getDate() === hoy.getDate() && f.getMonth() === hoy.getMonth()) {
@@ -69,7 +68,6 @@ function escucharPedidos() {
                 }
             });
 
-            // Tarjeta de Pedido
             const card = document.createElement('div');
             card.className = `pedido-card ${p.estado}`;
             card.innerHTML = `
@@ -102,7 +100,6 @@ function escucharPedidos() {
             else lp.appendChild(card);
         });
 
-        // Actualizar Métricas
         if(document.getElementById('s-hoy')) document.getElementById('s-hoy').innerText = `$${tHoy.toLocaleString()}`;
         if(document.getElementById('s-mes')) document.getElementById('s-mes').innerText = `$${tMes.toLocaleString()}`;
         if(document.getElementById('s-nequi')) document.getElementById('s-nequi').innerText = `$${tNequi.toLocaleString()}`;
@@ -128,14 +125,12 @@ window.actualizarEstado = async (id, estado) => await updateDoc(doc(db, "pedidos
 window.actualizarPago = async (id, metodoPago) => await updateDoc(doc(db, "pedidos", id), { metodoPago });
 window.toggleDisponibilidad = async (id, disp) => await updateDoc(doc(db, "platos", id), { disponible: disp });
 
-
 // --- LÓGICA DE CARTA AGRUPADA ---
 function escucharCarta() {
     onSnapshot(collection(db, "platos"), (snap) => {
         const list = document.getElementById('inv-list');
         list.innerHTML = '';
         
-        // Creamos la estructura de categorías
         const categorias = {
             diario: { titulo: "Menú del Día", platos: [] },
             rapida: { titulo: "Comidas Rápidas", platos: [] },
@@ -143,7 +138,6 @@ function escucharCarta() {
             otros: { titulo: "Otros", platos: [] }
         };
 
-        // Llenamos las categorías
         snap.forEach(d => {
             const item = d.data();
             item.id = d.id;
@@ -154,11 +148,10 @@ function escucharCarta() {
             }
         });
 
-        // Pintamos el HTML
         let htmlFinal = '';
         for (const key in categorias) {
             const cat = categorias[key];
-            if (cat.platos.length === 0) continue; // Si no hay platos, no dibuja la categoría
+            if (cat.platos.length === 0) continue;
 
             let platosHtml = '';
             cat.platos.forEach(item => {
@@ -177,12 +170,11 @@ function escucharCarta() {
                             <span class="slider"></span>
                         </label>
                         <button onclick="editarPlato('${item.id}', '${item.nombre}', '${item.precio}', '${item.categoria}', '${item.descripcion || ''}', '${ingTexto}')" style="color:#3b82f6; border:none; background:none; cursor:pointer;" title="Editar">${ICON_EDIT}</button>
-                        <button onclick="eliminarPlato('${item.id}')" style="color:var(--danger); border:none; background:none; cursor:pointer;" title="Eliminar">${ICON_TRASH}</button>
+                        <button onclick="eliminarPlatoModal('${item.id}')" style="color:var(--danger); border:none; background:none; cursor:pointer;" title="Eliminar">${ICON_TRASH}</button>
                     </div>
                 </div>`;
             });
 
-            // Ensamblamos el grupo colapsable
             htmlFinal += `
             <div class="admin-group" style="margin-bottom: 15px;">
                 <div class="admin-group-header" onclick="toggleCategoria('cat-${key}', 'chev-${key}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
@@ -199,7 +191,25 @@ function escucharCarta() {
     });
 }
 
-window.eliminarPlato = async (id) => { if(confirm("¿Borrar plato?")) await deleteDoc(doc(db, "platos", id)); };
+// --- NUEVA LÓGICA PARA EL MODAL PERSONALIZADO ---
+let idParaEliminar = null;
+
+window.eliminarPlatoModal = (id) => {
+    idParaEliminar = id;
+    document.getElementById('modal-title').innerText = '¿Borrar este plato?';
+    document.getElementById('delete-modal').style.display = 'flex';
+};
+
+const btnConfirmarEliminar = document.getElementById('confirm-delete-btn');
+if (btnConfirmarEliminar) {
+    btnConfirmarEliminar.onclick = async () => {
+        if (idParaEliminar) {
+            await deleteDoc(doc(db, "platos", idParaEliminar));
+            idParaEliminar = null;
+            document.getElementById('delete-modal').style.display = 'none';
+        }
+    };
+}
 
 window.editarPlato = (id, nombre, precio, cat, desc, ing) => {
     document.getElementById('edit-id').value = id;
@@ -235,7 +245,6 @@ document.getElementById('m-form').onsubmit = async (e) => {
     id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos);
     window.cancelarEdicion();
 };
-
 
 // --- MESAS E IMPRESIÓN ---
 window.renderizarPlanoMesas = function(pedidos) {
