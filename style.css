@@ -13,7 +13,7 @@ body { font-family: 'Poppins', sans-serif; background: #f4f4f4; color: var(--pri
 /* IZQUIERDA */
 .hero { 
     flex: 1; position: sticky; top: 0; height: 100vh;
-    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), url('Iku F.jpg') center/cover no-repeat;
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), url('IKU F.jpg') center/cover no-repeat;
     color: white; padding: 40px; display: flex; flex-direction: column; justify-content: space-between; text-align: center;
 }
 .hero h1 { font-family: var(--font-serif); font-size: 4rem; border-bottom: 4px solid var(--accent); display: inline-block; }
