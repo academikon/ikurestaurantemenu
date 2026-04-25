@@ -1,34 +1,35 @@
-/* Asegúrate de tener esto al final de tu style.css */
+/* --- SUSTITUYE O AÑADE ESTO A TU STYLE.CSS --- */
+
+:root {
+    --primary: #1a1a1a;
+    --accent: #ffcc00;
+}
 
 .menu-section {
-    display: none; /* Por defecto oculto */
-    opacity: 0;
-    transition: opacity 0.4s ease;
+    display: none; /* Todas ocultas por defecto */
 }
 
 .menu-section.active {
-    display: block; /* Solo se ve el que tiene la clase active */
-    opacity: 1;
+    display: block; /* Solo la activa se muestra */
+    animation: fadeIn 0.4s ease;
 }
 
-/* Estilos para el Administrador agupado */
-.admin-group {
-    margin-bottom: 30px;
-    background: #fff;
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid #eee;
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-.admin-group h3 {
-    font-size: 0.9rem;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 15px;
-    border-bottom: 2px solid #f1f1f1;
-}
-.admin-dish-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid #fafafa;
+
+/* Switches para el Stock en Admin */
+.switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 34px; transition: .4s; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .4s; }
+input:checked + .slider { background: #28a745; }
+input:checked + .slider:before { transform: translateX(18px); }
+
+/* Grupos Admin */
+.admin-category-group h4 {
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    color: #444;
 }
