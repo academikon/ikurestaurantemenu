@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IKU Restaurante Bar | Pueblo Bello</title>
+    <title>IKU Restaurante Bar | Menú</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,17 +13,14 @@
             <div class="brand-header">
                 <p class="overline">BIENVENIDO A</p>
                 <h1>IKU</h1>
-                <p class="brand-sub">RESTAURANTE BAR</p>
+                <p>RESTAURANTE BAR</p>
             </div>
-            
             <div class="info-box">
-                <p class="location">📍 <strong>Pueblo Bello, Cesar</strong></p>
-                <hr style="margin: 10px 0; opacity: 0.3;">
+                <p>📍 <strong>Pueblo Bello, Cesar</strong></p>
                 <div class="schedule">
-                    <p>🕒 <strong>Lun - Vie:</strong> 7:00 am - 4:00 pm</p>
-                    <p>🕒 <strong>Sáb - Dom:</strong> 7:00 am - 10:00 pm</p>
+                    <p>🕒 Lun - Vie: 7:00 am - 4:00 pm</p>
+                    <p>🕒 Sáb - Dom: 7:00 am - 10:00 pm</p>
                 </div>
-                <p class="tagline">★ Sabor Ancestral ★</p>
             </div>
         </header>
 
@@ -34,17 +31,16 @@
                 <button class="tab-btn" data-tab="varios">Varios</button>
             </nav>
 
-            <div id="loader" class="loader">Preparando algo delicioso...</div>
-            
+            <div id="loader" class="loader">Cargando delicias...</div>
             <section id="diario" class="menu-section active"></section>
             <section id="rapida" class="menu-section"></section>
             <section id="varios" class="menu-section"></section>
         </main>
     </div>
 
-    <div id="cart-fab" class="cart-fab" onclick="toggleCart()">
-        <span class="cart-count">0</span>
-        <span class="cart-icon">🛒</span>
+    <div class="cart-fab" onclick="toggleCart()">
+        <span class="cart-count" id="cart-count">0</span>
+        🛒
     </div>
 
     <div id="cart-modal" class="cart-modal">
@@ -58,9 +54,7 @@
                 <span>Total:</span>
                 <span id="cart-total-price">$0</span>
             </div>
-            <button class="btn-send-order" onclick="enviarPedido()">
-                PEDIR POR WHATSAPP
-            </button>
+            <button class="btn-send-order" onclick="enviarPedido()">CONFIRMAR PEDIDO</button>
         </div>
     </div>
 
