@@ -20,7 +20,7 @@ const escucharMenu = () => {
             const d = docSnap.data();
             const id = docSnap.id;
             const item = document.createElement('div');
-            item.className = 'plato-item'; // Clase para la grilla estilo tabla
+            item.className = 'plato-item';
             
             const precioFormateado = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(d.precio);
 
@@ -81,7 +81,7 @@ onAuthStateChanged(auth, (user) => {
     const login = document.getElementById('login-screen');
     
     if (user && correosAutorizados.includes(user.email)) {
-        panel.style.display = 'flex'; // Usamos flex para el dashboard layout
+        panel.style.display = 'flex'; 
         login.style.display = 'none';
         escucharPedidos();
         escucharMenu();
@@ -119,9 +119,10 @@ if (form) {
             } else {
                 await addDoc(collection(db, "platos"), datos);
             }
+            // Guarda en silencio y limpia todo
             form.reset();
             window.cancelarEdicion();
-        } catch (err) { alert("Error al guardar"); }
+        } catch (err) { alert("Error al guardar en la base de datos."); }
     };
 }
 
@@ -144,9 +145,10 @@ window.prepararEdicion = (id) => {
             
             document.getElementById('form-title').innerText = "Editando Plato";
             document.getElementById('submit-btn').innerText = "Actualizar Cambios";
-            document.getElementById('cancel-edit').style.display = "block";
             
-            // Nos movemos al inicio donde está el form
+            // Aparece la X
+            document.getElementById('close-edit-btn').style.display = "block";
+            
             document.querySelector('.content-area').scrollTo({top: 0, behavior: 'smooth'});
         }
     }, {onlyOnce: true});
@@ -156,6 +158,9 @@ window.cancelarEdicion = () => {
     document.getElementById('edit-id').value = "";
     document.getElementById('form-title').innerText = "Añadir Nuevo Plato";
     document.getElementById('submit-btn').innerText = "Guardar Plato";
-    document.getElementById('cancel-edit').style.display = "none";
+    
+    // Desaparece la X
+    document.getElementById('close-edit-btn').style.display = "none";
+    
     form.reset();
 };
