@@ -15,11 +15,9 @@
                 <span class="overline">Bienvenidos a</span>
                 <h1>IKU</h1>
                 <p class="brand-sub">RESTAURANTE BAR</p>
-                
                 <div class="info-box">
                     <p class="location">📍 Pueblo Bello, Cesar</p>
                     <p class="schedule">Lun - Dom: 11:00 AM - 10:00 PM</p>
-                    <p class="tagline">Sabor de la Sierra</p>
                 </div>
             </div>
         </aside>
@@ -31,7 +29,7 @@
                 <button class="tab-btn" data-tab="varios">Varios</button>
             </nav>
 
-            <div id="loader" class="loader">Cargando delicias...</div>
+            <div id="loader" class="loader">Preparando el menú...</div>
 
             <section id="diario" class="menu-section active"></section>
             <section id="rapida" class="menu-section"></section>
@@ -40,8 +38,7 @@
     </div>
 
     <div class="cart-fab" onclick="toggleCart()">
-        <span id="cart-count">0</span>
-        🛒
+        <span id="cart-count">0</span>🛒
     </div>
 
     <div id="cart-modal" class="cart-modal">
@@ -49,34 +46,21 @@
             <h3>Tu Pedido</h3>
             <button class="close-cart" onclick="toggleCart()">×</button>
         </div>
-        
-        <div class="cart-items-list" id="cart-items">
-            </div>
-
+        <div class="cart-items-list" id="cart-items"></div>
         <div class="cart-footer">
-            <div class="total-row">
-                <span>Total:</span>
-                <span id="cart-total-price">$0</span>
-            </div>
-
+            <div class="total-row"><span>Total:</span><span id="cart-total-price">$0</span></div>
             <div class="order-form">
-                <label>TIPO DE SERVICIO:</label>
                 <select id="tipo-servicio" onchange="ajustarPlaceholder()">
                     <option value="mesa">🍽️ Mesa (Comer aquí)</option>
                     <option value="domicilio">🛵 Domicilio</option>
                 </select>
-
                 <input type="text" id="nombre-cliente" placeholder="Nombre y # de Mesa">
-
                 <div class="whatsapp-check">
-                    <input type="checkbox" id="check-whatsapp" checked>
-                    <label for="check-whatsapp">Enviar respaldo por <strong>WhatsApp</strong></label>
+                    <input type="checkbox" id="check-whatsapp">
+                    <label for="check-whatsapp">Respaldo por <strong>WhatsApp</strong></label>
                 </div>
             </div>
-
-            <button class="btn-send-order" onclick="enviarPedido()">
-                <span>CONFIRMAR PEDIDO</span>
-            </button>
+            <button class="btn-send-order" onclick="enviarPedido()">CONFIRMAR PEDIDO</button>
         </div>
     </div>
 
@@ -85,7 +69,13 @@
         function ajustarPlaceholder() {
             const tipo = document.getElementById('tipo-servicio').value;
             const input = document.getElementById('nombre-cliente');
+            const checkWA = document.getElementById('check-whatsapp');
+            
+            // Ajustar texto del placeholder
             input.placeholder = (tipo === 'mesa') ? "Nombre y # de Mesa" : "Nombre y Dirección exacta";
+            
+            // Lógica de WhatsApp: Solo marcado por defecto si es domicilio
+            checkWA.checked = (tipo === 'domicilio');
         }
     </script>
 </body>
