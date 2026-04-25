@@ -3,13 +3,12 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebas
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCTAiCQ7hi-ZmBt2MYWzciELL-lB_SsE3A",
-  authDomain: "iku-menu-interactivo.firebaseapp.com",
-  projectId: "iku-menu-interactivo",
-  storageBucket: "iku-menu-interactivo.firebasestorage.app",
-  messagingSenderId: "59457697555",
-  appId: "1:59457697555:web:bf61c6746038a8906d4ce6",
-  measurementId: "G-ZJLHEDSVSB"
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_DOMINIO.firebaseapp.com",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_BUCKET.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId: "TU_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
