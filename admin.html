@@ -65,10 +65,17 @@
         <main class="main-content">
             <section id="v-pedidos" class="view-section active">
                 <div id="l-pendientes"></div>
-                <div style="margin-top:40px; border-top:1px dashed #ccc; padding-top:20px;">
-                    <h4 style="color:#94a3b8; font-size:0.75rem; margin-bottom:15px;">✅ DESPACHADOS (HOY)</h4>
-                    <div id="l-atendidos"></div>
-                </div>
+                <div style="margin-top:40px;">
+    <div class="admin-group">
+        <div class="admin-group-header" onclick="toggleSeccion(this)">
+            <h4 style="color:#94a3b8; font-size:0.8rem; margin:0;">✅ DESPACHADOS (HOY)</h4>
+            <span style="font-size:0.7rem; color:#94a3b8;">▼</span>
+        </div>
+        <div class="admin-group-content" style="padding: 10px;">
+            <div id="l-atendidos"></div>
+        </div>
+    </div>
+</div>
             </section>
 
             <section id="v-menu" class="view-section">
