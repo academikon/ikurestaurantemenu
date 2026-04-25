@@ -18,7 +18,7 @@ onAuthStateChanged(auth, (u) => {
     if(u && correosAutorizados.includes(u.email)) {
         document.getElementById('admin-panel').style.display = 'flex';
         document.getElementById('login-screen').style.display = 'none';
-        escucharCarta(); // Cargamos la carta primero
+        escucharCarta(); 
         escucharPedidos(); 
     } else {
         if(u) signOut(auth);
@@ -27,11 +27,10 @@ onAuthStateChanged(auth, (u) => {
     }
 });
 
-// VARIABLES GLOBALES PARA CRUZAR LOS DATOS (Menú y Pedidos)
 let menuGlobal = {};
 let pedidosGlobales = [];
 
-// --- LÓGICA DE PEDIDOS, MÉTRICAS E IMPRESIÓN ---
+// --- LÓGICA DE PEDIDOS Y MÉTRICAS ---
 function escucharPedidos() {
     const q = query(collection(db, "pedidos"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
@@ -45,7 +44,6 @@ function escucharPedidos() {
             p.id = docSnap.id;
             pedidosGlobales.push(p);
 
-            // Tarjeta de Pedido con Botones de Acción Rápida
             const card = document.createElement('div');
             card.className = `pedido-card ${p.estado}`;
             card.innerHTML = `
@@ -79,11 +77,16 @@ function escucharPedidos() {
                     }
 
                     ${p.estado === 'listo' ? 
-                        `<div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="font-size: 0.85rem; color: var(--success); font-weight: 600;">
-                                ✅ Pagado con ${p.metodoPago ? p.metodoPago.toUpperCase() : 'N/A'}
+                        `<div style="display:flex; justify-content:space-between; align-items:center; background: #f0fdf4; padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--success);">
+                            <div style="display:flex; align-items:center; gap: 8px;">
+                                <span style="font-size: 1rem;">✅</span>
+                                <select onchange="cambiarPago('${p.id}', this.value)" style="margin: 0; padding: 4px 8px; font-size: 0.85rem; font-weight: 600; color: var(--success); border: 1px solid #bbf7d0; border-radius: 6px; background: white; cursor: pointer;">
+                                    <option value="nequi" ${p.metodoPago === 'nequi' ? 'selected' : ''}>Nequi</option>
+                                    <option value="banco" ${p.metodoPago === 'banco' ? 'selected' : ''}>Banco</option>
+                                    <option value="efectivo" ${p.metodoPago === 'efectivo' ? 'selected' : ''}>Efectivo</option>
+                                </select>
                             </div>
-                            <button onclick="revertirPedido('${p.id}')" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline;">Revertir</button>
+                            <button onclick="revertirPedido('${p.id}')" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline;">Revertir a Preparando</button>
                         </div>` : ''
                     }
                 </div>
@@ -93,7 +96,6 @@ function escucharPedidos() {
             else lp.appendChild(card);
         });
 
-        // Llamamos a la función unificada de cálculo
         actualizarMétricas();
         renderizarPlanoMesas(pedidosGlobales);
     });
@@ -121,7 +123,6 @@ function actualizarMétricas() {
         p.items.forEach(item => {
             ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
             
-            // EL CRUCE DE DATOS: Buscamos los ingredientes de este plato en el diccionario global
             const ingrs = menuGlobal[item.nombre] || [];
             ingrs.forEach(ing => {
                 usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
@@ -151,6 +152,7 @@ function actualizarMétricas() {
 window.actualizarEstado = async (id, estado) => await updateDoc(doc(db, "pedidos", id), { estado });
 window.cerrarPedido = async (id, metodoPago) => await updateDoc(doc(db, "pedidos", id), { estado: 'listo', metodoPago: metodoPago });
 window.revertirPedido = async (id) => await updateDoc(doc(db, "pedidos", id), { estado: 'preparando', metodoPago: null });
+window.cambiarPago = async (id, nuevoMetodo) => await updateDoc(doc(db, "pedidos", id), { metodoPago: nuevoMetodo });
 window.toggleDisponibilidad = async (id, disp) => await updateDoc(doc(db, "platos", id), { disponible: disp });
 
 // --- LÓGICA DE CARTA AGRUPADA ---
@@ -159,7 +161,6 @@ function escucharCarta() {
         const list = document.getElementById('inv-list');
         list.innerHTML = '';
         
-        // Limpiamos el diccionario global antes de volver a llenarlo
         menuGlobal = {};
 
         const categorias = {
@@ -173,7 +174,6 @@ function escucharCarta() {
             const item = d.data();
             item.id = d.id;
             
-            // Guardamos los ingredientes en memoria para poder cruzarlos con los pedidos
             menuGlobal[item.nombre] = item.ingredientes || [];
 
             if (categorias[item.categoria]) {
@@ -183,7 +183,6 @@ function escucharCarta() {
             }
         });
 
-        // Si la carta cambia (ej. agregas ingredientes a un plato), forzamos la actualización visual de las métricas
         actualizarMétricas();
 
         let htmlFinal = '';
