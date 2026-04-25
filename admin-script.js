@@ -110,7 +110,7 @@ window.imprimirComanda = (pedidoJson) => {
 };
 
 window.cambiarEstado = async (id, nuevoEstado, itemsStr) => {
-    // Al pasar a preparando, ya no descuenta stock
+    // Al pasar a preparando, ya no descuenta stock, solo cambia el estado
     await updateDoc(doc(db, "pedidos", id), { estado: nuevoEstado });
 };
 
@@ -210,7 +210,7 @@ const escucharCarta = () => {
             const d = docSnap.data();
             catalogoPlatos[d.nombre] = d; 
 
-            // Se retiró la etiqueta de stock de la interfaz de la carta
+            // Se eliminó la etiqueta txtStock
             const html = `
             <div class="admin-row">
                 <div style="display:flex; flex-direction:column;">
@@ -276,6 +276,7 @@ window.prepararEdicion = async (id) => {
     document.getElementById('name').value = d.nombre;
     document.getElementById('price').value = d.precio;
     document.getElementById('category').value = d.categoria;
+    // Ya no cargamos el campo 'stock'
     document.getElementById('desc').value = d.descripcion || '';
     document.getElementById('ingredients').value = Array.isArray(d.ingredientes) ? d.ingredientes.join(',') : d.ingredientes || '';
     document.getElementById('f-title').innerText = "✏️ Editando: " + d.nombre;
@@ -292,6 +293,7 @@ document.getElementById('m-form').onsubmit = async (e) => {
     e.preventDefault();
     const id = document.getElementById('edit-id').value;
     
+    // Ya no tomamos el dato de 'stockIngresado'
     const datos = {
         nombre: document.getElementById('name').value,
         precio: Number(document.getElementById('price').value),
@@ -301,7 +303,7 @@ document.getElementById('m-form').onsubmit = async (e) => {
         timestamp: serverTimestamp()
     };
     
-    // Al guardar uno nuevo, siempre inicia disponible
+    // Al ser un plato nuevo, siempre entra disponible por defecto
     if(!id) datos.disponible = true;
     
     id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos);
