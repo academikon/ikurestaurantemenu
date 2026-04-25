@@ -9,7 +9,7 @@ const ICON_EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" s
 const ICON_TRASH = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
 let primeraCarga = true;
-let datosPlatos = {}; // Mapa para obtener ingredientes y categorías rápido
+let catalogoPlatos = {}; 
 
 const escucharPedidos = () => {
     onSnapshot(query(collection(db, "pedidos"), orderBy("timestamp", "desc")), (sn) => {
@@ -18,7 +18,6 @@ const escucharPedidos = () => {
         const listaPedidos = [];
         const hoy = new Date().toDateString();
 
-        // Sonido de notificación
         sn.docChanges().forEach(change => {
             if (change.type === "added" && !primeraCarga) {
                 if (change.doc.data().estado === 'pendiente') {
@@ -55,11 +54,11 @@ const escucharPedidos = () => {
                 </div>`;
             }
         });
-        actualizarEstadisticas(listaPedidos);
+        procesarEstadisticas(listaPedidos);
     });
 };
 
-const actualizarEstadisticas = (pedidos) => {
+const procesarEstadisticas = (pedidos) => {
     const ahora = new Date();
     const hoyStr = ahora.toDateString();
     const mesKey = `${ahora.getMonth() + 1}-${ahora.getFullYear()}`;
@@ -77,15 +76,13 @@ const actualizarEstadisticas = (pedidos) => {
         if (pMesKey === mesKey) {
             totalMes += Number(p.total);
             p.items.forEach(i => {
-                // Conteo de platos
-                if (!conteoPlatos[i.nombre]) conteoPlatos[i.nombre] = { cant: 0, cat: datosPlatos[i.nombre]?.categoria || 'varios' };
+                if (!conteoPlatos[i.nombre]) conteoPlatos[i.nombre] = { cant: 0, cat: catalogoPlatos[i.nombre]?.categoria || 'varios' };
                 conteoPlatos[i.nombre].cant++;
 
-                // Conteo de ingredientes para compras
-                const ings = datosPlatos[i.nombre]?.ingredientes || [];
+                const ings = catalogoPlatos[i.nombre]?.ingredientes || [];
                 ings.forEach(ing => {
-                    const nombreIng = ing.trim().toUpperCase();
-                    if(nombreIng) conteoIngredientes[nombreIng] = (conteoIngredientes[nombreIng] || 0) + 1;
+                    const n = ing.trim().toUpperCase();
+                    if(n) conteoIngredientes[n] = (conteoIngredientes[n] || 0) + 1;
                 });
             });
         }
@@ -94,30 +91,28 @@ const actualizarEstadisticas = (pedidos) => {
     document.getElementById('s-hoy').innerText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(totalHoy);
     document.getElementById('s-mes').innerText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(totalMes);
 
-    // Rankings por categoría
-    const rankDiv = document.getElementById('rankings-categoria');
-    if(rankDiv) {
+    const rDiv = document.getElementById('rankings-categoria');
+    if(rDiv) {
         const tops = { diario: '---', rapida: '---', varios: '---' };
         const max = { diario: 0, rapida: 0, varios: 0 };
-        Object.keys(conteoPlatos).forEach(nombre => {
-            const item = conteoPlatos[nombre];
-            if (item.cant > max[item.cat]) { max[item.cat] = item.cant; tops[item.cat] = nombre; }
+        Object.keys(conteoPlatos).forEach(nom => {
+            const item = conteoPlatos[nom];
+            if (item.cant > max[item.cat]) { max[item.cat] = item.cant; tops[item.cat] = nom; }
         });
-        rankDiv.innerHTML = `
+        rDiv.innerHTML = `
             <div style="padding:15px; background:#f8fafc; border-radius:12px; font-size:0.8rem;"><strong>📅 Menú Día</strong><br>${tops.diario}</div>
             <div style="padding:15px; background:#f8fafc; border-radius:12px; font-size:0.8rem;"><strong>🍔 Rápidas</strong><br>${tops.rapida}</div>
             <div style="padding:15px; background:#f8fafc; border-radius:12px; font-size:0.8rem;"><strong>✨ Varios</strong><br>${tops.varios}</div>`;
     }
 
-    // Ranking Ingredientes (Compras)
     const ingDiv = document.getElementById('rankings-ingredientes');
     if(ingDiv) {
-        const topIng = Object.entries(conteoIngredientes).sort((a,b) => b[1] - a[1]).slice(0, 8);
-        ingDiv.innerHTML = topIng.map(([name, cant]) => `
+        const sorted = Object.entries(conteoIngredientes).sort((a,b) => b[1] - a[1]).slice(0, 8);
+        ingDiv.innerHTML = sorted.map(([n, c]) => `
             <div style="background:#fff7ed; border:1px solid #fed7aa; color:#c2410c; padding:8px 12px; border-radius:8px; font-size:0.8rem; font-weight:600;">
-                ${name} <span style="margin-left:5px; opacity:0.5;">x${cant}</span>
+                ${n} <span style="margin-left:5px; opacity:0.5;">x${c}</span>
             </div>
-        `).join('') || '<p style="color:#94a3b8; font-size:0.8rem;">Sin datos este mes</p>';
+        `).join('') || 'Esperando datos...';
     }
 };
 
@@ -130,10 +125,10 @@ const escucharCarta = () => {
             <div class="admin-group"><div class="admin-group-header" onclick="toggleSeccion(this)"><h4>✨ Varios</h4><span class="chevron">▼</span></div><div class="admin-group-content" id="adm-varios"></div></div>
         `;
         
-        datosPlatos = {}; // Reiniciar mapa global
+        catalogoPlatos = {}; 
         sn.docs.forEach(docSnap => {
             const d = docSnap.data();
-            datosPlatos[d.nombre] = d; // Guardar datos para cálculos de stats e ingredientes
+            catalogoPlatos[d.nombre] = d; 
 
             const html = `
             <div class="admin-row">
@@ -153,12 +148,11 @@ const escucharCarta = () => {
     });
 };
 
-// Globales
 window.completar = (id) => updateDoc(doc(db, "pedidos", id), { estado: 'completado' });
 window.toggleStock = (id, val) => updateDoc(doc(db, "platos", id), { disponible: val });
 
 let currentAction = null; let targetId = null;
-window.triggerDelete = (id) => { currentAction = 'deletePlato'; targetId = id; document.getElementById('modal-title').innerText = "¿Eliminar plato?"; document.getElementById('delete-modal').style.display = 'flex'; };
+window.triggerDelete = (id) => { currentAction = 'deletePlato'; targetId = id; document.getElementById('modal-title').innerText = "¿Eliminar?"; document.getElementById('delete-modal').style.display = 'flex'; };
 window.closeModal = () => { document.getElementById('delete-modal').style.display = 'none'; currentAction = null; targetId = null; };
 
 document.getElementById('confirm-delete-btn').onclick = async () => {
