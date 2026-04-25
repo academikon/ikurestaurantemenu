@@ -3,19 +3,7 @@ import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 
 
 let carrito = [];
 
-// Iconos Modernos
 const ICON_TRASH = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-const ICON_CLOSE = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-
-const toastDiv = document.createElement('div');
-toastDiv.id = 'toast';
-document.body.appendChild(toastDiv);
-
-const mostrarNotificacion = (msj) => {
-    toastDiv.innerText = msj;
-    toastDiv.classList.add("show");
-    setTimeout(() => toastDiv.classList.remove("show"), 3000);
-};
 
 window.toggleDish = (header) => {
     const dish = header.parentElement;
@@ -31,7 +19,6 @@ window.agregarAlCarrito = (nombre, precio, id) => {
     carrito.push({ nombre, precio: parseInt(precio), nota });
     if(document.getElementById(`note-${id}`)) document.getElementById(`note-${id}`).value = '';
     actualizarCarrito();
-    mostrarNotificacion(`Añadido: ${nombre} 🛒`);
 };
 
 function actualizarCarrito() {
@@ -49,10 +36,10 @@ function actualizarCarrito() {
             <div class="cart-item-row">
                 <div>
                     <strong>${item.nombre}</strong>
-                    <span style="color:var(--success); font-size:0.9rem;">$${item.precio.toLocaleString()}</span>
+                    <span style="color:var(--success); font-weight:600; font-size:0.9rem;">$${item.precio.toLocaleString()}</span>
                     ${item.nota ? `<span class="cart-item-note">Nota: ${item.nota}</span>` : ''}
                 </div>
-                <button onclick="quitar(${i})" style="background:none; border:none; color:#cbd5e1; cursor:pointer; transition:0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">
+                <button onclick="quitar(${i})" class="btn-remove-item">
                     ${ICON_TRASH}
                 </button>
             </div>`;
@@ -65,6 +52,8 @@ window.quitar = (i) => { carrito.splice(i, 1); actualizarCarrito(); };
 window.enviarPedido = async () => {
     const cliente = document.getElementById('nombre-cliente')?.value;
     const tipo = document.getElementById('tipo-servicio')?.value;
+    const quiereWA = document.getElementById('check-whatsapp')?.checked;
+
     if (!cliente || carrito.length === 0) return alert("Completa tus datos.");
 
     const total = carrito.reduce((s, x) => s + x.precio, 0);
@@ -72,16 +61,15 @@ window.enviarPedido = async () => {
         await addDoc(collection(db, "pedidos"), {
             cliente, tipo, items: carrito, total, estado: "pendiente", timestamp: serverTimestamp()
         });
-        if (document.getElementById('check-whatsapp').checked) {
-            const msjWA = `*NUEVO PEDIDO IKU*%0A*Cliente:* ${cliente}%0A*Items:*%0A${carrito.map(i => `- ${i.nombre}`).join('%0A')}%0A*Total:* $${total.toLocaleString()}`;
+        if (quiereWA) {
+            const msjWA = `*NUEVO PEDIDO IKU*%0A*Cliente:* ${cliente}%0A*Total:* $${total.toLocaleString()}`;
             window.open(`https://wa.me/573210000000?text=${msjWA}`);
         }
-        mostrarNotificacion("¡Pedido enviado! 🧑‍🍳");
+        alert("¡Pedido enviado!");
         carrito = []; actualizarCarrito(); window.toggleCart();
-    } catch (e) { alert("Error"); }
+    } catch (e) { console.error(e); }
 };
 
-// Listener de Platos con Ingredientes
 onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) => {
     const sections = { diario: document.getElementById('diario'), rapida: document.getElementById('rapida'), varios: document.getElementById('varios') };
     Object.values(sections).forEach(s => { if(s) s.innerHTML = ''; });
@@ -105,7 +93,7 @@ onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) =
                 </div>
                 <div class="expand-content">
                     ${ingHTML}
-                    <input type="text" id="note-${docSnap.id}" class="note-input" placeholder="¿Nota especial?">
+                    <input type="text" id="note-${docSnap.id}" class="note-input" placeholder="¿Alguna nota especial?">
                     <button class="btn-add-cart" onclick="agregarAlCarrito('${d.nombre}', '${d.precio}', '${docSnap.id}')">AÑADIR AL PEDIDO</button>
                 </div>
             </div>`;
@@ -113,7 +101,6 @@ onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) =
     });
 });
 
-// Control de Tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
