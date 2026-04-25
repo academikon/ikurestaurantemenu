@@ -1,105 +1,18 @@
 import { db, auth } from './firebase-config.js';
-import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, addDoc, getDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, addDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const correos = ["cb01grupo@gmail.com", "kelly.araujotafur@gmail.com"];
-let totalPAnterior = 0;
 
-const sonar = () => { const a = document.getElementById('notif-sound'); if(a) a.play().catch(e => {}); };
-
-// PROCESAR ESTADÍSTICAS
-const procesarEstadisticas = async (pedidos) => {
-    const ahora = new Date();
-    const mesActual = `${ahora.getMonth() + 1}-${ahora.getFullYear()}`;
-    const hoyStr = ahora.toDateString();
-
-    let ventaHoy = 0, ventaMes = 0;
-    const conteoGlobal = {};
-    const historialMeses = {}; 
-
-    const platosSnap = await getDocs(collection(db, "platos"));
-    const catMapa = {};
-    platosSnap.forEach(d => { catMapa[d.data().nombre] = d.data().categoria; });
-
-    pedidos.forEach(p => {
-        if (p.estado !== 'completado' || !p.timestamp) return;
-        const fecha = p.timestamp.toDate();
-        const mesKey = `${fecha.getMonth() + 1}-${fecha.getFullYear()}`;
-        if (fecha.toDateString() === hoyStr) ventaHoy += p.total;
-        if (mesKey === mesActual) ventaMes += p.total;
-
-        if (!historialMeses[mesKey]) historialMeses[mesKey] = { total: 0, platos: {} };
-        historialMeses[mesKey].total += p.total;
-
-        p.items.forEach(item => {
-            historialMeses[mesKey].platos[item.nombre] = (historialMeses[mesKey].platos[item.nombre] || 0) + 1;
-            if (mesKey === mesActual) {
-                if (!conteoGlobal[item.nombre]) conteoGlobal[item.nombre] = { cantidad: 0, cat: catMapa[item.nombre] || 'varios' };
-                conteoGlobal[item.nombre].cantidad++;
-            }
-        });
-    });
-
-    const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
-    if(document.getElementById('s-hoy')) document.getElementById('s-hoy').innerText = fmt(ventaHoy);
-    if(document.getElementById('s-mes')) document.getElementById('s-mes').innerText = fmt(ventaMes);
-
-    const rankingsDiv = document.getElementById('rankings-categoria');
-    if(rankingsDiv) {
-        const tops = { diario: { n: '---', c: 0 }, rapida: { n: '---', c: 0 }, varios: { n: '---', c: 0 } };
-        Object.keys(conteoGlobal).forEach(nombre => {
-            const info = conteoGlobal[nombre];
-            if (info.cantidad > tops[info.cat].c) tops[info.cat] = { n: nombre, c: info.cantidad };
-        });
-        rankingsDiv.innerHTML = `
-            <div style="padding:15px; background:#f8fafc; border-radius:12px;"><strong>📅 Menú Día</strong><br><small>${tops.diario.n} (${tops.diario.c})</small></div>
-            <div style="padding:15px; background:#f8fafc; border-radius:12px;"><strong>🍔 Rápidas</strong><br><small>${tops.rapida.n} (${tops.rapida.c})</small></div>
-            <div style="padding:15px; background:#f8fafc; border-radius:12px;"><strong>✨ Varios</strong><br><small>${tops.varios.n} (${tops.varios.c})</small></div>
-        `;
-    }
-
-    const hBody = document.getElementById('historial-meses');
-    if(hBody) {
-        hBody.innerHTML = '';
-        Object.keys(historialMeses).sort().reverse().forEach(mes => {
-            const data = historialMeses[mes];
-            const topPlato = Object.keys(data.platos).reduce((a, b) => data.platos[a] > data.platos[b] ? a : b, "---");
-            hBody.innerHTML += `<tr><td style="padding:12px;">${mes}</td><td style="padding:12px;"><strong>${fmt(data.total)}</strong></td><td style="padding:12px;">${topPlato}</td></tr>`;
-        });
-    }
-};
-
-const escucharData = () => {
-    onSnapshot(query(collection(db, "pedidos"), orderBy("timestamp", "desc")), (sn) => {
-        const lp = document.getElementById('l-pendientes');
-        const pedidos = [];
-        let pCount = 0;
-        lp.innerHTML = ''; 
-        sn.docs.forEach(docSnap => {
-            const p = docSnap.data();
-            pedidos.push(p);
-            if (p.estado === 'pendiente') {
-                pCount++;
-                lp.innerHTML += `
-                <div style="background:white; padding:20px; border-radius:16px; border-left:6px solid var(--accent); margin-bottom:15px; box-shadow:0 4px 10px rgba(0,0,0,0.03);">
-                    <div style="display:flex; justify-content:space-between;"><strong>👤 ${p.cliente}</strong><span style="font-size:0.7rem; color:#94a3b8;">${p.tipo.toUpperCase()}</span></div>
-                    <p style="margin:10px 0; font-size:0.9rem;">${p.items.map(i=>i.nombre).join(', ')}</p>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:bold; color:var(--success);">$${p.total.toLocaleString()}</span>
-                        <button style="background:var(--success); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="completar('${docSnap.id}')">LISTO</button>
-                    </div>
-                </div>`;
-            }
-        });
-        if(pCount > totalPAnterior) sonar();
-        totalPAnterior = pCount;
-        procesarEstadisticas(pedidos);
-    });
-};
+// Iconos SVG minimalistas
+const ICON_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>`;
+const ICON_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
 const escucharMenu = () => {
     onSnapshot(collection(db, "platos"), (sn) => {
         const inv = document.getElementById('inv-list');
+        if(!inv) return;
+        
         inv.innerHTML = `
             <div class="admin-group" id="g-diario"><div class="admin-group-header" onclick="toggleSeccion(this)"><h4>📅 Menú del Día</h4><span class="chevron">▼</span></div><div class="admin-group-content" id="adm-diario"></div></div>
             <div class="admin-group" id="g-rapida"><div class="admin-group-header" onclick="toggleSeccion(this)"><h4>🍔 Comidas Rápidas</h4><span class="chevron">▼</span></div><div class="admin-group-content" id="adm-rapida"></div></div>
@@ -110,22 +23,73 @@ const escucharMenu = () => {
             const d = docSnap.data();
             const html = `
             <div class="admin-row">
-                <div class="dish-info"><strong>${d.nombre}</strong><span>$${Number(d.precio).toLocaleString()}</span></div>
+                <span><strong>${d.nombre}</strong> <small style="color:#888;">($${Number(d.precio).toLocaleString()})</small></span>
                 <div class="actions">
-                    <label class="switch"><input type="checkbox" ${d.disponible !== false ? 'checked' : ''} onchange="toggleStock('${docSnap.id}', this.checked)"><span class="slider"></span></label>
-                    <button class="btn-action btn-edit" onclick="prepararEdicion('${docSnap.id}')">✏️</button>
-                    <button class="btn-action btn-delete" onclick="borrarM('${docSnap.id}')">🗑️</button>
+                    <label class="switch">
+                        <input type="checkbox" ${d.disponible !== false ? 'checked' : ''} onchange="toggleStock('${docSnap.id}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                    <button class="btn-icon btn-edit" onclick="prepararEdicion('${docSnap.id}')" title="Editar">${ICON_EDIT}</button>
+                    <button class="btn-icon btn-delete" onclick="triggerDelete('${docSnap.id}')" title="Eliminar">${ICON_TRASH}</button>
                 </div>
             </div>`;
-            const target = document.getElementById(`adm-${d.categoria}`);
-            if(target) target.innerHTML += html;
+            const container = document.getElementById(`adm-${d.categoria}`);
+            if(container) container.innerHTML += html;
         });
+    });
+};
+
+// MODAL DE ELIMINACIÓN PERSONALIZADO
+let itemToDelete = null;
+window.triggerDelete = (id) => {
+    itemToDelete = id;
+    document.getElementById('delete-modal').style.display = 'flex';
+};
+
+document.getElementById('confirm-delete-btn').onclick = async () => {
+    if(itemToDelete) {
+        await deleteDoc(doc(db, "platos", itemToDelete));
+        itemToDelete = null;
+        document.getElementById('delete-modal').style.display = 'none';
+    }
+};
+
+// ... (Resto de funciones: escucharData, toggleStock, mForm.onsubmit, etc se mantienen o actualizan)
+
+const escucharData = () => {
+    onSnapshot(query(collection(db, "pedidos"), orderBy("timestamp", "desc")), (sn) => {
+        const lp = document.getElementById('l-pendientes');
+        const sHoy = document.getElementById('s-hoy');
+        const sMes = document.getElementById('s-mes');
+        let totalHoy = 0, totalMes = 0;
+        const ahora = new Date();
+
+        if(lp) lp.innerHTML = '';
+        sn.docs.forEach(d => {
+            const p = d.data();
+            if(p.estado === 'pendiente') {
+                lp.innerHTML += `
+                <div class="card" style="border-left:6px solid var(--accent);">
+                    <div style="display:flex; justify-content:space-between;"><strong>👤 ${p.cliente}</strong><small>${p.tipo.toUpperCase()}</small></div>
+                    <p style="font-size:0.85rem; margin:10px 0;">${p.items.map(i=>i.nombre).join(', ')}</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold; color:var(--success);">$${p.total.toLocaleString()}</span>
+                        <button onclick="completar('${d.id}')" style="background:var(--success); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">LISTO</button>
+                    </div>
+                </div>`;
+            } else if(p.estado === 'completado' && p.timestamp) {
+                const f = p.timestamp.toDate();
+                if(f.toDateString() === ahora.toDateString()) totalHoy += p.total;
+                if(f.getMonth() === ahora.getMonth()) totalMes += p.total;
+            }
+        });
+        if(sHoy) sHoy.innerText = `$${totalHoy.toLocaleString()}`;
+        if(sMes) sMes.innerText = `$${totalMes.toLocaleString()}`;
     });
 };
 
 window.completar = (id) => updateDoc(doc(db, "pedidos", id), { estado: 'completado' });
 window.toggleStock = (id, val) => updateDoc(doc(db, "platos", id), { disponible: val });
-window.borrarM = (id) => confirm("¿Eliminar este plato de la carta?") && deleteDoc(doc(db, "platos", id));
 
 window.prepararEdicion = async (id) => {
     const snap = await getDoc(doc(db, "platos", id));
@@ -135,15 +99,17 @@ window.prepararEdicion = async (id) => {
     document.getElementById('price').value = d.precio;
     document.getElementById('category').value = d.categoria;
     document.getElementById('desc').value = d.descripcion || '';
-    document.getElementById('ingredients').value = d.ingredientes?.join(',') || '';
-    document.getElementById('f-title').innerText = "✏️ Editando: " + d.nombre;
+    document.getElementById('ingredients').value = d.ingredientes ? d.ingredientes.join(',') : '';
+    document.getElementById('f-title').innerText = "✏️ Editando Plato";
+    document.getElementById('s-btn').innerText = "ACTUALIZAR CAMBIOS";
     document.getElementById('close-x').style.display = "block";
-    document.querySelector('.main-content').scrollTo({top: 0, behavior: 'smooth'});
+    document.querySelector('.main-content').scrollTo({top:0, behavior:'smooth'});
 };
 
 window.cancelarEdicion = () => {
     document.getElementById('edit-id').value = "";
-    document.getElementById('f-title').innerText = "➕ Gestionar Carta";
+    document.getElementById('f-title').innerText = "Añadir Nuevo Plato";
+    document.getElementById('s-btn').innerText = "GUARDAR EN LA CARTA";
     document.getElementById('close-x').style.display = "none";
     document.getElementById('m-form').reset();
 };
