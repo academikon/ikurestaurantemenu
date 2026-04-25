@@ -9,9 +9,9 @@ const ICON_EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" s
 const ICON_TRASH = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 const ICON_CHECK = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
-// --- GESTIÓN DE PEDIDOS (TIEMPO REAL) ---
+// --- GESTIÓN DE PEDIDOS (CON ORDEN Y TIEMPO) ---
 function escucharPedidos() {
-    // Ordenamos por timestamp ASC para que el primero que llegue esté arriba
+    // 1. Pedidos siempre por orden de llegada (ASC: el primero que llega es el primero en la lista)
     const q = query(collection(db, "pedidos"), orderBy("timestamp", "asc"));
     
     onSnapshot(q, (sn) => {
@@ -25,15 +25,13 @@ function escucharPedidos() {
             const p = docSnap.data();
             const id = docSnap.id;
             const fecha = p.timestamp?.toDate() || new Date();
-            const horaFormateada = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const hora = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // Calcular tiempo de preparación si ya fue atendido
-            let tiempoInfo = '';
+            // 2. Cálculo del tiempo de preparación
+            let tiempoTexto = '';
             if (p.estado === 'atendido' && p.atendidoAt && p.timestamp) {
-                const inicio = p.timestamp.toDate();
-                const fin = p.atendidoAt.toDate();
-                const diffMinutos = Math.round((fin - inicio) / 60000);
-                tiempoInfo = `<span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:bold; margin-left:10px;">⏱️ ${diffMinutos} min</span>`;
+                const diff = Math.round((p.atendidoAt.toDate() - p.timestamp.toDate()) / 60000);
+                tiempoTexto = `<span class="tiempo-prep">⏱️ ${diff} min</span>`;
             }
 
             const html = `
@@ -41,50 +39,33 @@ function escucharPedidos() {
                     <div class="pedido-header">
                         <div>
                             <strong>${p.cliente}</strong>
-                            <span style="font-size:0.8rem; color:#64748b; display:block;">🕒 ${horaFormateada} ${tiempoInfo}</span>
+                            <span style="font-size:0.8rem; color:#64748b; display:block;">🕒 ${hora} ${tiempoTexto}</span>
                         </div>
                         <span class="badge-${p.tipo}">${p.tipo.toUpperCase()}</span>
                     </div>
                     <div class="pedido-items">
-                        ${p.items.map(item => `
-                            <div class="item-line">
-                                <span>${item.nombre}</span>
-                                ${item.nota ? `<small style="display:block; color:var(--danger);">• ${item.nota}</small>` : ''}
-                            </div>
-                        `).join('')}
+                        ${p.items.map(i => `<div>• ${i.nombre} ${i.nota ? `<small style="color:red;">(${i.nota})</small>` : ''}</div>`).join('')}
                     </div>
                     <div class="pedido-footer">
                         <strong>Total: $${p.total.toLocaleString()}</strong>
-                        ${p.estado === 'pendiente' ? 
-                            `<button class="btn-atender" onclick="completarPedido('${id}')">${ICON_CHECK} ATENDER</button>` : 
-                            `<span style="color:var(--success); font-weight:bold; font-size:0.8rem;">FINALIZADO</span>`
-                        }
+                        ${p.estado === 'pendiente' ? `<button onclick="completarPedido('${id}')" class="btn-atender">${ICON_CHECK} ATENDER</button>` : ''}
                     </div>
-                </div>
-            `;
+                </div>`;
 
-            if (p.estado === 'pendiente') {
-                listaPendientes.innerHTML += html;
-            } else {
-                listaAtendidos.innerHTML += html;
-            }
+            p.estado === 'pendiente' ? listaPendientes.innerHTML += html : listaAtendidos.innerHTML += html;
         });
         actualizarEstadisticas();
     });
 }
 
 window.completarPedido = async (id) => {
-    try {
-        await updateDoc(doc(db, "pedidos", id), {
-            estado: 'atendido',
-            atendidoAt: serverTimestamp() // Guardamos la hora exacta de finalización
-        });
-    } catch (e) {
-        console.error("Error al actualizar pedido:", e);
-    }
+    await updateDoc(doc(db, "pedidos", id), {
+        estado: 'atendido',
+        atendidoAt: serverTimestamp() // Marca de tiempo para el cálculo de preparación
+    });
 };
 
-// --- GESTIÓN DE LA CARTA (PLATOS) ---
+// --- GESTIÓN DE LA CARTA (RESTAURADA ORIGINAL) ---
 function escucharCarta() {
     const q = query(collection(db, "platos"), orderBy("timestamp", "desc"));
     onSnapshot(q, (sn) => {
@@ -95,69 +76,46 @@ function escucharCarta() {
         sn.docs.forEach(docSnap => {
             const d = docSnap.data();
             const id = docSnap.id;
-            
             const card = document.createElement('div');
             card.className = `plato-card ${!d.disponible ? 'agotado' : ''}`;
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:start;">
                     <div>
                         <h4 style="margin:0;">${d.nombre}</h4>
-                        <small style="color:#64748b;">${d.categoria}</small>
+                        <small>${d.categoria}</small>
                     </div>
                     <div style="display:flex; gap:5px;">
                         <button onclick="editarPlato('${id}')" class="btn-icon">${ICON_EDIT}</button>
                         <button onclick="confirmarEliminar('${id}')" class="btn-icon delete">${ICON_TRASH}</button>
                     </div>
                 </div>
-                <div style="margin:15px 0; font-weight:bold; color:var(--accent);">$${d.precio.toLocaleString()}</div>
+                <div style="margin:10px 0; font-weight:bold;">$${d.precio.toLocaleString()}</div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.8rem;">Stock: ${d.stock}</span>
+                    <span>Stock: ${d.stock}</span>
                     <label class="switch">
                         <input type="checkbox" ${d.disponible ? 'checked' : ''} onchange="toggleDisponibilidad('${id}', this.checked)">
                         <span class="slider"></span>
                     </label>
-                </div>
-            `;
+                </div>`;
             grid.appendChild(card);
         });
     });
 }
 
-// --- FUNCIONES AUXILIARES ---
-
 window.toggleDisponibilidad = async (id, estado) => {
     await updateDoc(doc(db, "platos", id), { disponible: estado });
 };
 
-window.guardarPlato = async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('edit-id').value;
-    const stockIngresado = Number(document.getElementById('stock').value);
-    
-    const datos = {
-        nombre: document.getElementById('name').value,
-        precio: Number(document.getElementById('price').value),
-        categoria: document.getElementById('category').value,
-        stock: stockIngresado,
-        descripcion: document.getElementById('desc').value,
-        ingredientes: document.getElementById('ingredients').value.split(',').map(s => s.trim()),
-        timestamp: serverTimestamp()
-    };
-    
-    if(!id) datos.disponible = stockIngresado > 0;
-    
-    try {
-        id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos);
-        cancelarEdicion();
-    } catch (err) {
-        console.error("Error guardando:", err);
+window.confirmarEliminar = async (id) => {
+    if(confirm("¿Seguro que quieres eliminar este plato?")) {
+        await deleteDoc(doc(db, "platos", id));
     }
 };
 
 window.editarPlato = async (id) => {
-    const docRef = await getDoc(doc(db, "platos", id));
-    if (docRef.exists()) {
-        const d = docRef.data();
+    const snap = await getDoc(doc(db, "platos", id));
+    if (snap.exists()) {
+        const d = snap.data();
         document.getElementById('edit-id').value = id;
         document.getElementById('name').value = d.nombre;
         document.getElementById('price').value = d.precio;
@@ -177,34 +135,42 @@ window.cancelarEdicion = () => {
     document.getElementById('btn-cancelar').style.display = "none";
 };
 
-// --- ESTADÍSTICAS ---
+window.guardarPlato = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-id').value;
+    const stock = Number(document.getElementById('stock').value);
+    const datos = {
+        nombre: document.getElementById('name').value,
+        precio: Number(document.getElementById('price').value),
+        categoria: document.getElementById('category').value,
+        stock: stock,
+        descripcion: document.getElementById('desc').value,
+        ingredientes: document.getElementById('ingredients').value.split(',').map(s => s.trim()),
+        timestamp: serverTimestamp()
+    };
+    if(!id) datos.disponible = stock > 0;
+    
+    id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos);
+    cancelarEdicion();
+};
+
+// --- LOGIN Y ANALÍTICA ---
 async function actualizarEstadisticas() {
     const sn = await getDocs(collection(db, "pedidos"));
-    let totalVentas = 0;
-    let contadorPedidos = 0;
-    let ingredientesMap = {};
-
-    sn.docs.forEach(docSnap => {
-        const p = docSnap.data();
-        if(p.estado === 'atendido') {
-            totalVentas += p.total;
-            contadorPedidos++;
-        }
+    let total = 0, count = 0;
+    sn.forEach(doc => {
+        const p = doc.data();
+        if(p.estado === 'atendido') { total += p.total; count++; }
     });
-
-    const vElement = document.getElementById('ventas-totales');
-    const pElement = document.getElementById('pedidos-completados');
-    if(vElement) vElement.innerText = `$${totalVentas.toLocaleString()}`;
-    if(pElement) pElement.innerText = contadorPedidos;
+    if(document.getElementById('ventas-totales')) document.getElementById('ventas-totales').innerText = `$${total.toLocaleString()}`;
+    if(document.getElementById('pedidos-completados')) document.getElementById('pedidos-completados').innerText = count;
 }
 
-// --- AUTH ---
 onAuthStateChanged(auth, (u) => {
     if(u && correosAutorizados.includes(u.email)) {
         document.getElementById('admin-panel').style.display = 'flex';
         document.getElementById('login-screen').style.display = 'none';
-        escucharPedidos(); 
-        escucharCarta();
+        escucharPedidos(); escucharCarta();
     } else {
         if(u) signOut(auth);
         document.getElementById('admin-panel').style.display = 'none';
@@ -212,9 +178,6 @@ onAuthStateChanged(auth, (u) => {
     }
 });
 
-window.loginGoogle = () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider);
-};
-
+window.loginGoogle = () => signInWithPopup(auth, new GoogleAuthProvider());
 window.cerrarSesion = () => signOut(auth);
+document.getElementById('plate-form')?.addEventListener('submit', guardarPlato);
