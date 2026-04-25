@@ -2,22 +2,32 @@ import { db } from './firebase-config.js';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 let carrito = [];
-const toastDiv = document.createElement('div'); toastDiv.id = 'toast'; document.body.appendChild(toastDiv);
 
-const mostrarNotificacion = (m) => { 
-    toastDiv.innerText = m; 
-    toastDiv.classList.add("show"); 
-    setTimeout(() => { toastDiv.classList.remove("show"); }, 3000); 
+// --- 1. NOTIFICACIÓN TOAST ---
+const toastDiv = document.createElement('div');
+toastDiv.id = 'toast';
+document.body.appendChild(toastDiv);
+
+const mostrarNotificacion = (mensaje) => {
+    toastDiv.innerText = mensaje;
+    toastDiv.classList.add("show");
+    setTimeout(() => { toastDiv.classList.remove("show"); }, 3000);
 };
 
+// --- 2. ACORDEÓN ---
 window.toggleDish = (header) => {
     const dish = header.parentElement;
     const isOpened = dish.classList.contains('expanded');
+    // Cerramos todos los demás para que sea un acordeón real
     document.querySelectorAll('.dish-item').forEach(i => i.classList.remove('expanded'));
     if (!isOpened) dish.classList.add('expanded');
 };
 
-window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('open');
+// --- 3. GESTIÓN DEL CARRITO ---
+window.toggleCart = () => {
+    const modal = document.getElementById('cart-modal');
+    if(modal) modal.classList.toggle('open');
+};
 
 window.agregarAlCarrito = (nombre, precio, id) => {
     const notaEl = document.getElementById(`note-${id}`);
@@ -30,76 +40,124 @@ window.agregarAlCarrito = (nombre, precio, id) => {
 
 function actualizarCarrito() {
     const cont = document.getElementById('cart-items');
-    document.getElementById('cart-count').innerText = carrito.length;
+    const countEl = document.getElementById('cart-count');
+    const priceEl = document.getElementById('cart-total-price');
+    
+    if(countEl) countEl.innerText = carrito.length;
     if(!cont) return;
+    
     cont.innerHTML = '';
     let total = 0;
+    
     carrito.forEach((item, i) => {
         total += item.precio;
-        cont.innerHTML += `<div style="border-bottom:1px solid #eee; padding:15px 0;"><div style="display:flex; justify-content:space-between;"><strong>${item.nombre}</strong> <span>$${item.precio}</span></div>${item.nota ? `<p style="font-size:0.8rem; color:#666;">Nota: ${item.nota}</p>` : ''}<button onclick="quitar(${i})" style="color:red; background:none; border:none; cursor:pointer; font-size:0.8rem;">Quitar</button></div>`;
+        cont.innerHTML += `
+            <div style="border-bottom:1px solid #eee; padding:15px 0;">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>${item.nombre}</strong> 
+                    <span>$${item.precio.toLocaleString()}</span>
+                </div>
+                ${item.nota ? `<p style="font-size:0.8rem; color:#666; font-style:italic;">Nota: ${item.nota}</p>` : ''}
+                <button onclick="quitar(${i})" style="color:#ff4444; background:none; border:none; cursor:pointer; font-size:0.8rem; margin-top:5px;">Quitar</button>
+            </div>`;
     });
-    document.getElementById('cart-total-price').innerText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(total);
+    
+    if(priceEl) priceEl.innerText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(total);
 }
 
 window.quitar = (i) => { carrito.splice(i, 1); actualizarCarrito(); };
 
 window.enviarPedido = async () => {
-    const mesaDireccion = document.getElementById('nombre-cliente').value;
-    const tipoServicio = document.getElementById('tipo-servicio').value;
-    const quiereWhatsApp = document.getElementById('check-whatsapp').checked;
-    if (!mesaDireccion || carrito.length === 0) { alert("Completa tus datos"); return; }
+    const mesaDireccion = document.getElementById('nombre-cliente')?.value;
+    const tipoServicio = document.getElementById('tipo-servicio')?.value;
+    const quiereWhatsApp = document.getElementById('check-whatsapp')?.checked;
+
+    if (!mesaDireccion || carrito.length === 0) { 
+        alert("Por favor ingresa tu nombre/mesa y añade productos."); 
+        return; 
+    }
+
     const total = carrito.reduce((s, x) => s + x.precio, 0);
+    
     try {
-        await addDoc(collection(db, "pedidos"), { cliente: mesaDireccion, tipo: tipoServicio, items: carrito, total: total, estado: "pendiente", timestamp: serverTimestamp() });
+        await addDoc(collection(db, "pedidos"), {
+            cliente: mesaDireccion,
+            tipo: tipoServicio,
+            items: carrito,
+            total: total,
+            estado: "pendiente",
+            timestamp: serverTimestamp()
+        });
+
         if (quiereWhatsApp) {
-            const textoWA = `*IKU*%0A*Ubicación:* ${mesaDireccion}%0A*Items:*%0A${carrito.map(i => `- ${i.nombre}`).join('%0A')}%0A*Total:* $${total}`;
-            window.open(`https://wa.me/573210000000?text=${textoWA}`); // Reemplaza con tu número
+            const textoWA = `*IKU - NUEVO PEDIDO*%0A------------------%0A*Cliente:* ${mesaDireccion}%0A*Servicio:* ${tipoServicio.toUpperCase()}%0A*Items:*%0A${carrito.map(i => `- ${i.nombre} (${i.nota || 'Sin nota'})`).join('%0A')}%0A%0A*Total:* $${total.toLocaleString()}`;
+            const numeroIKU = "573210000000"; // Tu número aquí
+            window.open(`https://wa.me/${numeroIKU}?text=${textoWA}`);
         }
-        mostrarNotificacion("¡Pedido enviado! 🧑‍🍳"); 
-        carrito = []; actualizarCarrito(); window.toggleCart();
-    } catch (e) { mostrarNotificacion("Error al enviar."); }
+
+        mostrarNotificacion("¡Pedido enviado con éxito! 🧑‍🍳"); 
+        carrito = []; 
+        actualizarCarrito(); 
+        window.toggleCart();
+    } catch (e) { 
+        mostrarNotificacion("Error al conectar con la cocina."); 
+    }
 };
 
-// --- RENDERIZADO CORREGIDO ---
+// --- 4. RENDERIZADO DEL MENÚ (LA CORRECCIÓN) ---
 onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) => {
-    // Reiniciamos los contenedores de texto
+    // IMPORTANTE: Limpiar los acumuladores en cada cambio de la base de datos
     const cats = { diario: '', rapida: '', varios: '' };
     const loader = document.getElementById('loader');
     if(loader) loader.style.display = 'none';
 
-    sn.docs.forEach(doc => {
-        const d = doc.data();
-        if (d.disponible === false) return;
+    sn.docs.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.disponible === false) return; // Si está agotado, no se muestra
 
         const html = `
             <div class="dish-item">
                 <div class="dish-header" onclick="toggleDish(this)">
-                    <h3>${d.nombre}</h3> <strong>$${d.precio}</strong>
+                    <h3>${d.nombre}</h3> 
+                    <strong>$${d.precio.toLocaleString()}</strong>
                 </div>
                 <div class="expand-content">
                     <p style="font-size:0.9rem; color:#555; margin-bottom:10px;">${d.descripcion || ''}</p>
-                    <input type="text" id="note-${doc.id}" class="note-input" placeholder="¿Alguna nota?">
-                    <button class="btn-add-cart" onclick="agregarAlCarrito('${d.nombre}', '${d.precio}', '${doc.id}')">AÑADIR</button>
+                    <input type="text" id="note-${docSnap.id}" class="note-input" placeholder="¿Alguna nota especial?">
+                    <button class="btn-add-cart" onclick="agregarAlCarrito('${d.nombre}', '${d.precio}', '${docSnap.id}')">AÑADIR AL PEDIDO</button>
                 </div>
             </div>`;
         
-        // Asignación estricta a la categoría
-        if (d.categoria === 'diario') cats.diario += html;
-        else if (d.categoria === 'rapida') cats.rapida += html;
-        else if (d.categoria === 'varios') cats.varios += html;
+        // Asignación estricta usando if/else para evitar duplicados
+        if (d.categoria === 'diario') {
+            cats.diario += html;
+        } else if (d.categoria === 'rapida') {
+            cats.rapida += html;
+        } else if (d.categoria === 'varios') {
+            cats.varios += html;
+        }
     });
 
-    // Inyectamos en el DOM
-    document.getElementById('diario').innerHTML = cats.diario || '<p style="text-align:center; padding:20px; color:#999;">No hay platos hoy.</p>';
-    document.getElementById('rapida').innerHTML = cats.rapida || '<p style="text-align:center; padding:20px; color:#999;">No hay platos disponibles.</p>';
-    document.getElementById('varios').innerHTML = cats.varios || '<p style="text-align:center; padding:20px; color:#999;">Próximamente...</p>';
+    // Inyectar el HTML solo en su contenedor correspondiente
+    const divDiario = document.getElementById('diario');
+    const divRapida = document.getElementById('rapida');
+    const divVarios = document.getElementById('varios');
+
+    if(divDiario) divDiario.innerHTML = cats.diario || '<p style="text-align:center; padding:20px; color:#888;">No hay platos en esta sección.</p>';
+    if(divRapida) divRapida.innerHTML = cats.rapida || '<p style="text-align:center; padding:20px; color:#888;">No hay platos en esta sección.</p>';
+    if(divVarios) divVarios.innerHTML = cats.varios || '<p style="text-align:center; padding:20px; color:#888;">No hay platos en esta sección.</p>';
 });
 
+// --- 5. NAVEGACIÓN POR TABS ---
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = () => {
+        // Quitar active de todos los botones y secciones
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
+        
+        // Poner active al actual
         btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).classList.add('active');
+        const target = document.getElementById(btn.dataset.tab);
+        if(target) target.classList.add('active');
     };
 });
