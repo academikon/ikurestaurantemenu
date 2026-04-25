@@ -57,7 +57,7 @@
                         <div class="admin-group">
                             <div class="admin-group-header" onclick="toggleAtendidos()" style="color: var(--success); cursor: pointer; display: flex; justify-content: space-between;">
                                 <span>Atendidos Hoy</span>
-                                <svg id="chevron-atendidos" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: 0.3s;"><polyline points="6 9 12 15 18 9"/></svg>
+                                <svg id="chevron-atendidos" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s;"><polyline points="6 9 12 15 18 9"/></svg>
                             </div>
                             <div id="l-atendidos" class="lista-atendidos-oculta" style="margin-top: 15px;"></div>
                         </div>
@@ -150,6 +150,13 @@
             const c = document.getElementById('chevron-atendidos');
             l.classList.toggle('lista-atendidos-oculta');
             c.style.transform = l.classList.contains('lista-atendidos-oculta') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+        // NUEVO: Función para colapsar las listas del menú
+        function toggleCategoria(listaId, chevronId) {
+            const l = document.getElementById(listaId);
+            const c = document.getElementById(chevronId);
+            l.classList.toggle('lista-categoria-oculta');
+            c.style.transform = l.classList.contains('lista-categoria-oculta') ? 'rotate(0deg)' : 'rotate(180deg)';
         }
     </script>
 </body>
