@@ -13,7 +13,7 @@ let primeraCarga = true;
 let catalogoPlatos = {}; 
 let listaPedidosGlobal = []; // Se agregó esta variable para guardar los pedidos y sincronizarlos con la carta
 
-const escucharPedidos = () => {
+const escucharPedidos = (renderizarPlanoMesas(listaPedidos);) => {
     onSnapshot(query(collection(db, "pedidos"), orderBy("timestamp", "asc")), (sn) => {
         const lp = document.getElementById('l-pendientes');
         const la = document.getElementById('l-atendidos');
