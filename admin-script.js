@@ -30,7 +30,6 @@ onAuthStateChanged(auth, (u) => {
 let menuGlobal = {};
 let pedidosGlobales = [];
 
-// --- LÓGICA DE PEDIDOS Y MÉTRICAS ---
 function escucharPedidos() {
     const q = query(collection(db, "pedidos"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
@@ -46,6 +45,8 @@ function escucharPedidos() {
 
             const card = document.createElement('div');
             card.className = `pedido-card ${p.estado}`;
+            
+            // Visualización clara para el Chef de los ingredientes excluidos
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
                     <div>
@@ -55,7 +56,13 @@ function escucharPedidos() {
                     <button onclick="imprimirComanda('${encodeURIComponent(JSON.stringify(p))}')" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size: 0.8rem;">🖨️ Imprimir</button>
                 </div>
                 <div style="margin-bottom:15px; padding-left: 10px; border-left: 2px solid var(--border);">
-                    ${p.items.map(i => `<div style="font-size:0.9rem; margin-bottom:4px;">• 1x ${i.nombre} ${i.nota ? `<span style="color:#eab308; font-size:0.8rem;">(${i.nota})</span>` : ''}</div>`).join('')}
+                    ${p.items.map(i => `
+                        <div style="font-size:0.95rem; margin-bottom:8px; font-weight:500;">
+                            • 1x ${i.nombre} 
+                            ${i.excluidos && i.excluidos.length > 0 ? `<br><span style="color:var(--danger); font-size:0.8rem; margin-left:14px; font-weight:600;">❌ SIN: ${i.excluidos.join(', ')}</span>` : ''}
+                            ${i.nota ? `<br><span style="color:#eab308; font-size:0.8rem; margin-left:14px;">(Nota: ${i.nota})</span>` : ''}
+                        </div>
+                    `).join('')}
                 </div>
                 
                 <div class="acciones-pedido" style="margin-top:10px;">
@@ -86,7 +93,7 @@ function escucharPedidos() {
                                     <option value="efectivo" ${p.metodoPago === 'efectivo' ? 'selected' : ''}>Efectivo</option>
                                 </select>
                             </div>
-                            <button onclick="revertirPedido('${p.id}')" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline;">Revertir a Preparando</button>
+                            <button onclick="revertirPedido('${p.id}')" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline;">Revertir</button>
                         </div>` : ''
                     }
                 </div>
@@ -124,8 +131,13 @@ function actualizarMétricas() {
             ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
             
             const ingrs = menuGlobal[item.nombre] || [];
+            const excluidos = item.excluidos || []; 
+            
             ingrs.forEach(ing => {
-                usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
+                // MATEMÁTICA PURA: Si el ingrediente NO está en la lista negra, sumamos 1.
+                if (!excluidos.includes(ing)) {
+                    usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
+                }
             });
         });
     });
@@ -148,14 +160,12 @@ function actualizarMétricas() {
     }
 }
 
-// --- FUNCIONES DE ESTADO ÁGIL ---
 window.actualizarEstado = async (id, estado) => await updateDoc(doc(db, "pedidos", id), { estado });
 window.cerrarPedido = async (id, metodoPago) => await updateDoc(doc(db, "pedidos", id), { estado: 'listo', metodoPago: metodoPago });
 window.revertirPedido = async (id) => await updateDoc(doc(db, "pedidos", id), { estado: 'preparando', metodoPago: null });
 window.cambiarPago = async (id, nuevoMetodo) => await updateDoc(doc(db, "pedidos", id), { metodoPago: nuevoMetodo });
 window.toggleDisponibilidad = async (id, disp) => await updateDoc(doc(db, "platos", id), { disponible: disp });
 
-// --- LÓGICA DE CARTA AGRUPADA ---
 function escucharCarta() {
     onSnapshot(collection(db, "platos"), (snap) => {
         const list = document.getElementById('inv-list');
@@ -228,7 +238,6 @@ function escucharCarta() {
     });
 }
 
-// --- LÓGICA PARA EL MODAL PERSONALIZADO ---
 let idParaEliminar = null;
 
 window.eliminarPlatoModal = (id) => {
@@ -283,7 +292,6 @@ document.getElementById('m-form').onsubmit = async (e) => {
     window.cancelarEdicion();
 };
 
-// --- MESAS E IMPRESIÓN ---
 window.renderizarPlanoMesas = function(pedidos) {
     const grid = document.getElementById('grid-mesas');
     if (!grid) return;
@@ -326,7 +334,11 @@ window.imprimirComanda = function(pJsonStr) {
             <p style="margin: 5px 0;"><strong>Fecha:</strong> ${fecha}</p>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
             <ul style="list-style:none; padding:0; margin:0;">
-                ${p.items.map(i => `<li style="margin-bottom:8px; font-size: 14px;"><strong>1x ${i.nombre}</strong> <br>${i.nota ? `<span style="font-size:12px; margin-left:15px;">- Nota: ${i.nota}</span>` : ''}</li>`).join('')}
+                ${p.items.map(i => `<li style="margin-bottom:8px; font-size: 14px;">
+                    <strong>1x ${i.nombre}</strong> <br>
+                    ${i.excluidos && i.excluidos.length > 0 ? `<span style="font-size:12px; margin-left:15px; color:red;">- SIN: ${i.excluidos.join(', ')}</span><br>` : ''}
+                    ${i.nota ? `<span style="font-size:12px; margin-left:15px;">- Nota: ${i.nota}</span>` : ''}
+                </li>`).join('')}
             </ul>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
             <h3 style="text-align:right; margin: 5px 0;">Total: $${Number(p.total).toLocaleString()}</h3>
