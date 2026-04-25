@@ -3,49 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin SFG | Gestión</title>
-    <link rel="stylesheet" href="style.css"> <style>
-        /* Estilos específicos para el formulario de admin */
-        body { background: #1a1a1a; color: white; padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; color: #333; padding: 30px; border-radius: 12px; width: 100%; max-width: 500px; }
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; }
-        .btn-save { background: #ffcc00; border: none; padding: 15px; font-weight: bold; width: 100%; cursor: pointer; border-radius: 6px; }
-        .btn-google { background: #4285F4; color: white; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 6px; font-weight: bold; width: 100%; }
+    <title>Admin SFG | Gestión Avanzada</title>
+    <style>
+        :root { --primary: #1a1a1a; --accent: #ffcc00; --danger: #d9534f; --info: #4285F4; }
+        body { font-family: 'Poppins', sans-serif; background: #1a1a1a; color: white; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; color: #333; padding: 30px; border-radius: 12px; width: 100%; max-width: 600px; }
+        h2, h3 { text-align: center; margin-bottom: 20px; }
+        .form-header { background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--accent); }
+        
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; }
+        
+        .btn-save { background: var(--accent); border: none; padding: 15px; font-weight: bold; width: 100%; cursor: pointer; border-radius: 6px; text-transform: uppercase; }
+        .btn-cancel { background: #ccc; border: none; padding: 10px; width: 100%; margin-top: 5px; cursor: pointer; border-radius: 6px; display: none; }
+        
+        /* Estilos de las secciones de platos activos */
+        .category-group { margin-top: 30px; }
+        .category-title { background: var(--primary); color: var(--accent); padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        
+        .plato-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fff; margin-bottom: 5px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .plato-info { flex: 1; }
+        .plato-actions { display: flex; gap: 8px; }
+        
+        .btn-edit { background: var(--info); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
+        
+        #login-screen { text-align: center; }
         #admin-panel { display: none; }
-        .plato-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; margin-top: 10px; }
-        .btn-delete { background: #d9534f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <div id="login-screen">
-            <h2 style="text-align:center">SFG Admin</h2>
-            <button class="btn-google" id="login-btn">Entrar con Google</button>
+            <h2>SFG ADMIN</h2>
+            <button onclick="loginConGoogle()" style="padding:15px; width:100%; cursor:pointer; background:#4285F4; color:white; border:none; border-radius:6px; font-weight:bold;">Entrar con Google</button>
         </div>
 
         <div id="admin-panel">
-            <p id="user-tag" style="font-size:0.7rem; color: #888; text-align:right"></p>
-            <h2>Nuevo Plato</h2>
+            <div class="form-header">
+                <h3 id="form-title">Publicar Nuevo Plato</h3>
+                <p id="user-tag" style="font-size:0.7rem; color: #888; margin:0"></p>
+            </div>
+            
             <form id="menu-form">
-                <input type="text" id="name" placeholder="Nombre del plato" required>
-                <input type="number" id="price" placeholder="Precio (ej: 22000)" required>
+                <input type="hidden" id="edit-id"> <input type="text" id="name" placeholder="Nombre del plato" required>
+                <input type="number" id="price" placeholder="Precio (ej: 25000)" required>
                 <select id="category">
                     <option value="diario">Menú del Día</option>
                     <option value="rapida">Comidas Rápidas</option>
                     <option value="varios">Varios</option>
                 </select>
-                <textarea id="desc" placeholder="Descripción"></textarea>
+                <textarea id="desc" placeholder="Descripción corta..."></textarea>
                 <input type="text" id="ingredients" placeholder="Ingredientes (separados por coma)">
-                <button type="submit" class="btn-save">PUBLICAR EN EL MENÚ</button>
+                
+                <button type="submit" id="submit-btn" class="btn-save">Publicar Plato</button>
+                <button type="button" id="cancel-edit" class="btn-cancel" onclick="cancelarEdicion()">Cancelar Edición</button>
             </form>
 
-            <hr style="margin:30px 0">
-            <h3>Platos Activos (Para retirar)</h3>
-            <div id="lista-admin">
-                </div>
+            <hr style="margin:40px 0; border:0; border-top: 2px dashed #eee;">
+
+            <h3>Inventario de Platos</h3>
             
-            <button id="logout-btn" style="background:none; border:none; color:red; cursor:pointer; margin-top:20px; width:100%">Cerrar Sesión</button>
+            <div id="seccion-diario" class="category-group">
+                <div class="category-title">Menú del Día</div>
+                <div class="lista-platos" id="lista-diario"></div>
+            </div>
+
+            <div id="seccion-rapida" class="category-group">
+                <div class="category-title">Comidas Rápidas</div>
+                <div class="lista-platos" id="lista-rapida"></div>
+            </div>
+
+            <div id="seccion-varios" class="category-group">
+                <div class="category-title">Varios</div>
+                <div class="lista-platos" id="lista-varios"></div>
+            </div>
+
+            <button onclick="cerrarSesion()" style="margin-top:40px; width:100%; background:none; border:none; color:red; cursor:pointer; text-decoration:underline;">Cerrar Sesión</button>
         </div>
     </div>
 
