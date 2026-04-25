@@ -53,11 +53,20 @@ window.enviarPedido = async () => {
     const cliente = document.getElementById('nombre-cliente')?.value;
     const tipo = document.getElementById('tipo-servicio')?.value;
     const quiereWA = document.getElementById('check-whatsapp')?.checked;
+    
+    const btn = document.querySelector('.btn-send-order');
+    const textoOriginal = btn.innerHTML;
 
-    if (!cliente || carrito.length === 0) return alert("Por favor ingresa tu nombre y agrega productos.");
+    if (!cliente || carrito.length === 0) {
+        btn.innerHTML = "Faltan datos ⚠️";
+        setTimeout(() => btn.innerHTML = textoOriginal, 2000);
+        return;
+    }
 
     const total = carrito.reduce((s, x) => s + x.precio, 0);
     try {
+        btn.innerHTML = "Enviando... ⏳";
+        
         await addDoc(collection(db, "pedidos"), {
             cliente, tipo, items: carrito, total, estado: "pendiente", timestamp: serverTimestamp()
         });
@@ -67,11 +76,23 @@ window.enviarPedido = async () => {
             window.open(`https://wa.me/573210000000?text=${msjWA}`);
         }
         
-        alert("¡Pedido enviado!");
-        carrito = []; 
-        actualizarCarrito(); 
-        window.toggleCart();
-    } catch (e) { alert("Error: " + e.message); }
+        // Mensaje de éxito en el mismo botón
+        btn.innerHTML = "¡Pedido enviado! ✅";
+        
+        // Esperamos 1.5 segundos para que el cliente lea, limpiamos y cerramos
+        setTimeout(() => {
+            carrito = []; 
+            actualizarCarrito(); 
+            document.getElementById('nombre-cliente').value = ''; // Limpiamos el input
+            window.toggleCart();
+            btn.innerHTML = textoOriginal; // Restauramos el botón
+        }, 1500);
+
+    } catch (e) { 
+        btn.innerHTML = "Error al enviar ❌";
+        setTimeout(() => btn.innerHTML = textoOriginal, 2000);
+        console.error(e);
+    }
 };
 
 // Carga de platos
