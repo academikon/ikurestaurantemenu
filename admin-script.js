@@ -46,7 +46,7 @@ function escucharPedidos() {
             const card = document.createElement('div');
             card.className = `pedido-card ${p.estado}`;
             
-            // Visualización clara para el Chef de los ingredientes excluidos
+            // Eliminada la visualización de la variable "nota"
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
                     <div>
@@ -60,7 +60,6 @@ function escucharPedidos() {
                         <div style="font-size:0.95rem; margin-bottom:8px; font-weight:500;">
                             • 1x ${i.nombre} 
                             ${i.excluidos && i.excluidos.length > 0 ? `<br><span style="color:var(--danger); font-size:0.8rem; margin-left:14px; font-weight:600;">❌ SIN: ${i.excluidos.join(', ')}</span>` : ''}
-                            ${i.nota ? `<br><span style="color:#eab308; font-size:0.8rem; margin-left:14px;">(Nota: ${i.nota})</span>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -134,7 +133,6 @@ function actualizarMétricas() {
             const excluidos = item.excluidos || []; 
             
             ingrs.forEach(ing => {
-                // MATEMÁTICA PURA: Si el ingrediente NO está en la lista negra, sumamos 1.
                 if (!excluidos.includes(ing)) {
                     usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
                 }
@@ -337,7 +335,6 @@ window.imprimirComanda = function(pJsonStr) {
                 ${p.items.map(i => `<li style="margin-bottom:8px; font-size: 14px;">
                     <strong>1x ${i.nombre}</strong> <br>
                     ${i.excluidos && i.excluidos.length > 0 ? `<span style="font-size:12px; margin-left:15px; color:red;">- SIN: ${i.excluidos.join(', ')}</span><br>` : ''}
-                    ${i.nota ? `<span style="font-size:12px; margin-left:15px;">- Nota: ${i.nota}</span>` : ''}
                 </li>`).join('')}
             </ul>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
