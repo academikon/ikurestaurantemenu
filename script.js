@@ -67,23 +67,24 @@ window.enviarPedido = async () => {
             window.open(`https://wa.me/573210000000?text=${msjWA}`);
         }
         
-        alert("¡Pedido enviado a la cocina!");
+        alert("¡Pedido enviado!");
         carrito = []; 
         actualizarCarrito(); 
         window.toggleCart();
-    } catch (e) { alert("Error al enviar: " + e.message); }
+    } catch (e) { alert("Error: " + e.message); }
 };
 
-// Escucha de platos con filtrado estricto por categoría
+// Escucha de platos con filtrado corregido
 onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) => {
-    const sections = { 
-        diario: document.getElementById('diario'), 
-        rapida: document.getElementById('rapida'), 
-        varios: document.getElementById('varios') 
-    };
+    const sDiario = document.getElementById('diario');
+    const sRapida = document.getElementById('rapida');
+    const sVarios = document.getElementById('varios');
     
-    // Limpiar todas las secciones antes de re-dibujar
-    Object.values(sections).forEach(s => { if(s) s.innerHTML = ''; });
+    // Limpieza total antes de cargar
+    if(sDiario) sDiario.innerHTML = '';
+    if(sRapida) sRapida.innerHTML = '';
+    if(sVarios) sVarios.innerHTML = '';
+    
     document.getElementById('loader').style.display = 'none';
 
     sn.docs.forEach(docSnap => {
@@ -104,15 +105,15 @@ onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) =
                 </div>
                 <div class="expand-content">
                     ${ingHTML}
-                    <input type="text" id="note-${docSnap.id}" class="note-input" placeholder="¿Alguna nota especial (sin cebolla, etc)?">
+                    <input type="text" id="note-${docSnap.id}" class="note-input" placeholder="¿Alguna nota especial?">
                     <button class="btn-add-cart" onclick="agregarAlCarrito('${d.nombre}', '${d.precio}', '${docSnap.id}')">AÑADIR AL PEDIDO</button>
                 </div>
             </div>`;
         
-        // FILTRADO ESTRICTO: Solo agrega si la categoría coincide exactamente con el ID de la sección
-        if (sections[d.categoria]) {
-            sections[d.categoria].innerHTML += html;
-        }
+        // Asignación estricta por categoría
+        if (d.categoria === 'diario' && sDiario) sDiario.innerHTML += html;
+        else if (d.categoria === 'rapida' && sRapida) sRapida.innerHTML += html;
+        else if (d.categoria === 'varios' && sVarios) sVarios.innerHTML += html;
     });
 });
 
@@ -121,6 +122,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).classList.add('active');
+        const target = document.getElementById(btn.dataset.tab);
+        if(target) target.classList.add('active');
     };
 });
