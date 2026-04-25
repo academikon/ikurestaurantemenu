@@ -3,7 +3,12 @@ import { collection, addDoc, onSnapshot, doc, query, orderBy, serverTimestamp } 
 
 let carrito = [];
 const ICON_TRASH = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-const SOUND_ADD = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-hard-pop-click-2364.mp3');
+
+// Mejor método de sonido para forzar a móviles a cargarlo
+const SOUND_ADD = document.createElement('audio');
+SOUND_ADD.src = 'https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-up-alert-2358.mp3';
+SOUND_ADD.preload = 'auto';
+document.body.appendChild(SOUND_ADD);
 
 document.addEventListener("DOMContentLoaded", () => {
     const params = new URLSearchParams(window.location.search);
@@ -42,25 +47,23 @@ window.agregarAlCarrito = (nombre, precio, id) => {
     const qtySpan = document.getElementById(`cant-${id}`);
     const cantidad = qtySpan ? parseInt(qtySpan.innerText) : 1;
     
-    // Capturamos los ingredientes que el cliente tachó visualmente
     const excluidos = Array.from(document.querySelectorAll(`#dish-${id} .ing-pill.excluido`)).map(el => el.innerText);
     
-    // Verificamos si ya existe el MISMO plato con las MISMAS exclusiones
     const existeIndex = carrito.findIndex(i => i.nombre === nombre && JSON.stringify(i.excluidos) === JSON.stringify(excluidos));
     
     if(existeIndex !== -1) {
         carrito[existeIndex].cantidad += cantidad; 
     } else {
-        carrito.push({ nombre, precio: Number(precio), cantidad: cantidad, nota: "", id, excluidos });
+        // Ya NO guardamos la variable 'nota'
+        carrito.push({ nombre, precio: Number(precio), cantidad: cantidad, id, excluidos });
     }
     
     if(qtySpan) qtySpan.innerText = "1"; 
     
-    // Reiniciamos las pastillas tachadas para el próximo pedido del mismo plato
     document.querySelectorAll(`#dish-${id} .ing-pill.excluido`).forEach(el => el.classList.remove('excluido'));
     
     SOUND_ADD.currentTime = 0;
-    SOUND_ADD.play().catch(e => console.log('Audio no soportado:', e));
+    SOUND_ADD.play().catch(e => console.log('Sonido bloqueado por el navegador (o celular en silencio)'));
 
     const cartFab = document.querySelector('.cart-fab');
     if (cartFab) {
@@ -70,10 +73,6 @@ window.agregarAlCarrito = (nombre, precio, id) => {
     }
     
     actualizarCarrito();
-};
-
-window.actualizarNota = (index, valor) => {
-    carrito[index].nota = valor;
 };
 
 function actualizarCarrito() {
@@ -95,19 +94,17 @@ function actualizarCarrito() {
             ? `<div style="color:#ef4444; font-size:0.75rem; font-weight:600; margin-top:4px;">❌ Sin: ${item.excluidos.join(', ')}</div>` 
             : '';
 
+        // Se eliminó el textarea (cuadro de nota)
         cont.innerHTML += `
-        <div class="cart-item-row" style="flex-direction:column; align-items:stretch; gap:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>
-                    <strong style="font-size:1.05rem;">${item.cantidad}x ${item.nombre}</strong>
-                    ${excluidosStr}
-                </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="color:#22c55e; font-weight:700;">$${(item.precio * item.cantidad).toLocaleString()}</span>
-                    <button onclick="quitar(${i})" class="btn-remove-item" title="Eliminar plato">${ICON_TRASH}</button>
-                </div>
+        <div class="cart-item-row">
+            <div>
+                <strong style="font-size:1.05rem;">${item.cantidad}x ${item.nombre}</strong>
+                ${excluidosStr}
             </div>
-            <textarea class="cart-note-input" placeholder="Ej: Si son varias: 1 sin queso, 2 con salsas separadas..." onchange="actualizarNota(${i}, this.value)">${item.nota}</textarea>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#22c55e; font-weight:700;">$${(item.precio * item.cantidad).toLocaleString()}</span>
+                <button onclick="quitar(${i})" class="btn-remove-item" title="Eliminar plato">${ICON_TRASH}</button>
+            </div>
         </div>`;
     });
     if(priceEl) priceEl.innerText = `$${total.toLocaleString()}`;
@@ -133,11 +130,11 @@ window.enviarPedido = async () => {
     let itemsParaEnviar = [];
     carrito.forEach(item => {
         for(let k = 0; k < item.cantidad; k++) {
+            // Ya no enviamos variable 'nota' a la base de datos
             itemsParaEnviar.push({
                 nombre: item.nombre,
                 precio: item.precio,
-                nota: k === 0 ? item.nota : "", 
-                excluidos: item.excluidos || [] // Pasamos la data pura al administrador
+                excluidos: item.excluidos || []
             });
         }
     });
@@ -209,25 +206,28 @@ onSnapshot(collection(db, "platos"), (snapshot) => {
 
         let ingredientesHTML = '';
         if (d.ingredientes && d.ingredientes.length > 0) {
-            // El stopPropagation() evita que al tocar el ingrediente se cierre el menú del plato entero
+            // MOVIDO: Ahora los ingredientes están estructurados para ir dentro del menú desplegable
             ingredientesHTML = `
-            <div class="ing-container">
-                ${d.ingredientes.map(i => `<span class="ing-pill" onclick="event.stopPropagation(); this.classList.toggle('excluido')" title="Toca para quitar">${i}</span>`).join('')}
-            </div>
-            <div style="font-size:0.7rem; color:var(--danger); margin-top:2px; font-weight:500;">* Toca un ingrediente para quitarlo de tu plato</div>`;
+            <div style="margin-bottom: 16px; padding-top: 10px; border-top: 1px dashed #eee;">
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px; font-weight:600;">Ingredientes <span style="font-weight:400;">(Toca para quitarlos de tu plato)</span>:</div>
+                <div class="ing-container" style="margin: 0;">
+                    ${d.ingredientes.map(i => `<span class="ing-pill" onclick="event.stopPropagation(); this.classList.toggle('excluido')" title="Toca para quitar">${i}</span>`).join('')}
+                </div>
+            </div>`;
         }
 
+        // Estructura actualizada: Ingredientes pasan a estar DENTRO de expand-content
         const html = `
         <div class="dish-item" id="dish-${docSnap.id}">
             <div class="dish-header" onclick="toggleDish(this)">
                 <div style="flex:1; padding-right:10px;">
                     <h3>${d.nombre}</h3>
-                    <p>${d.descripcion || ''}</p>
-                    ${ingredientesHTML}
+                    <p style="font-size:0.9rem; color:var(--text-muted);">${d.descripcion || ''}</p>
                 </div>
                 <strong class="dish-price">$${Number(d.precio).toLocaleString()}</strong>
             </div>
             <div class="expand-content">
+                ${ingredientesHTML}
                 <div class="qty-wrapper">
                     <span class="qty-label">Cantidad:</span>
                     <div class="qty-control">
