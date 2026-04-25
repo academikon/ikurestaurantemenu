@@ -50,24 +50,82 @@ body { font-family: var(--font-sans); background-color: var(--bg-light); color: 
 .note-input { width: 100%; padding: 12px; border: 2px solid #f1f5f9; border-radius: 12px; margin-bottom: 10px; outline: none; }
 .btn-add-cart { background: var(--primary); color: var(--accent); border: none; padding: 14px; border-radius: 12px; font-weight: 700; width: 100%; cursor: pointer; }
 
-/* CARRITO MODAL MODERNO */
-.cart-fab { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: white; width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-#cart-count { position: absolute; top: -5px; right: -5px; background: var(--accent); color: var(--primary); font-size: 0.75rem; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 3px solid var(--primary); }
+/* --- ESTÉTICA DEL CARRITO (IKU INDUSTRIAL) --- */
+.cart-fab { 
+    position: fixed; bottom: 30px; right: 30px; background: var(--primary); 
+    color: white; width: 68px; height: 68px; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center; 
+    z-index: 100; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
+.cart-fab:hover { transform: scale(1.1); }
+#cart-count { 
+    position: absolute; top: -2px; right: -2px; background: var(--accent); 
+    color: var(--primary); font-size: 0.75rem; width: 26px; height: 26px; 
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+    font-weight: 800; border: 3px solid var(--primary); 
+}
 
-.cart-modal { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100vh; background: var(--white); z-index: 1000; transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
-.cart-modal.open { right: 0; box-shadow: -15px 0 40px rgba(0,0,0,0.1); }
+.cart-modal { 
+    position: fixed; top: 0; right: -100%; width: 100%; max-width: 420px; 
+    height: 100vh; background: white; z-index: 1000; 
+    transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; 
+}
+.cart-modal.open { right: 0; box-shadow: -15px 0 50px rgba(0,0,0,0.2); }
 
-.cart-header { padding: 25px; background: var(--primary); color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
-.btn-close-cart { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; }
+.cart-header { 
+    padding: 30px; background: var(--primary); color: var(--accent); 
+    display: flex; justify-content: space-between; align-items: center; 
+}
+.cart-header h3 { font-family: var(--font-serif); font-size: 1.6rem; letter-spacing: 1px; }
+.close-cart { 
+    background: rgba(255,255,255,0.1); border: none; color: white; 
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer; 
+    display: flex; align-items: center; justify-content: center; transition: 0.3s; 
+    font-size: 1.5rem; line-height: 1;
+}
+.close-cart:hover { background: var(--danger); transform: rotate(90deg); }
 
-.cart-items-list { flex: 1; padding: 20px; overflow-y: auto; }
-.cart-item-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f5f9; }
-.cart-item-note { font-size: 0.8rem; color: var(--danger); font-style: italic; margin-top: 4px; display: block; }
+.cart-items-list { flex: 1; padding: 25px; overflow-y: auto; }
+.cart-item-row { 
+    display: flex; justify-content: space-between; align-items: flex-start; 
+    padding: 18px 0; border-bottom: 1px solid #f1f5f9; 
+}
+.cart-item-info strong { display: block; font-size: 1rem; color: var(--primary); margin-bottom: 4px; }
+.cart-item-note { 
+    font-size: 0.8rem; color: var(--danger); font-style: italic; 
+    background: #fff5f5; padding: 4px 10px; border-radius: 6px; 
+    display: inline-block; margin-top: 6px; border-left: 3px solid var(--danger);
+}
+.btn-remove-item { 
+    background: none; border: none; color: #cbd5e1; cursor: pointer; 
+    padding: 8px; transition: 0.2s; border-radius: 8px;
+}
+.btn-remove-item:hover { color: var(--danger); background: #fff1f1; }
 
-.cart-footer { padding: 25px; background: #fafbfc; border-top: 1px solid #eee; }
-.btn-send-order { width: 100%; padding: 16px; background: var(--primary); color: var(--accent); border: none; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
-.btn-send-order:hover { transform: translateY(-2px); }
+.cart-footer { padding: 30px; background: #fafbfc; border-top: 1px solid #f1f5f9; }
+.total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.total-row span:last-child { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
 
+.order-form select, .order-form input { 
+    width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #edf2f7; 
+    background: white; font-size: 0.95rem; margin-bottom: 12px; outline: none; transition: 0.3s; 
+}
+.order-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.1); }
+
+.whatsapp-check { 
+    display: flex; align-items: center; gap: 12px; margin-bottom: 25px; 
+    font-size: 0.85rem; color: var(--text-muted); cursor: pointer; 
+}
+.whatsapp-check input { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; }
+
+.btn-send-order { 
+    width: 100%; padding: 20px; background: var(--primary); color: var(--accent); 
+    border: none; border-radius: 16px; font-weight: 700; font-size: 1rem; 
+    cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    gap: 12px; transition: 0.3s; box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+}
+.btn-send-order:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 850px) {
