@@ -12,7 +12,6 @@ let primeraCarga = true;
 let catalogoPlatos = {}; 
 
 const escucharPedidos = () => {
-    // CAMBIO 1: Ordenar por "asc" para que los pedidos más antiguos (orden de llegada) salgan primero
     onSnapshot(query(collection(db, "pedidos"), orderBy("timestamp", "asc")), (sn) => {
         const lp = document.getElementById('l-pendientes');
         const la = document.getElementById('l-atendidos');
@@ -40,7 +39,6 @@ const escucharPedidos = () => {
             const itemsJson = encodeURIComponent(JSON.stringify(p.items));
             const pJson = encodeURIComponent(JSON.stringify(p));
 
-            // CAMBIO 2: Cálculo de hora de llegada y tiempo de preparación
             let horaLlegada = '';
             let tiempoPrepStr = '';
 
@@ -70,7 +68,6 @@ const escucharPedidos = () => {
                         <button style="background:#e2e8f0; color:#333; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;" onclick="imprimirComanda('${pJson}')">🖨️</button>
                        </div>`;
 
-                // Agregado 🕒 ${horaLlegada} al lado del nombre
                 lp.innerHTML += `
                 <div class="${cardClass}">
                     <div class="pedido-card-header" style="display:flex; justify-content:space-between; align-items:center;">
@@ -84,7 +81,6 @@ const escucharPedidos = () => {
                     </div>
                 </div>`;
             } else if (p.estado === 'completado' && p.timestamp?.toDate().toDateString() === hoy) {
-                // Agregado ${tiempoPrepStr} en la lista de completados
                 la.innerHTML += `
                 <div style="display:flex; justify-content:space-between; padding:12px 20px; border-bottom:1px solid #f1f5f9; font-size:0.9rem;">
                     <span><strong>${p.cliente}</strong> <small style="color:#94a3b8; margin-left:10px;">${p.tipo} (${p.metodoPago || 'Efectivo'})</small> ${tiempoPrepStr}</span>
@@ -114,28 +110,11 @@ window.imprimirComanda = (pedidoJson) => {
 };
 
 window.cambiarEstado = async (id, nuevoEstado, itemsStr) => {
+    // Al pasar a preparando, ya no descuenta stock
     await updateDoc(doc(db, "pedidos", id), { estado: nuevoEstado });
-    
-    if (nuevoEstado === 'preparando' && itemsStr) {
-        const items = JSON.parse(decodeURIComponent(itemsStr));
-        for (const i of items) {
-            if (i.id) {
-                const pRef = doc(db, "platos", i.id);
-                const pSnap = await getDoc(pRef);
-                if (pSnap.exists()) {
-                    let stockActual = pSnap.data().stock;
-                    if (stockActual !== undefined && stockActual > 0) {
-                        stockActual--;
-                        await updateDoc(pRef, { stock: stockActual, disponible: stockActual > 0 });
-                    }
-                }
-            }
-        }
-    }
 };
 
 window.finalizarPedido = async (id, metodoCaja) => {
-    // CAMBIO 3: Guardar la hora exacta (completadoAt) en que finalizas el pedido para calcular la diferencia
     await updateDoc(doc(db, "pedidos", id), { 
         estado: 'completado',
         metodoPago: metodoCaja,
@@ -231,13 +210,11 @@ const escucharCarta = () => {
             const d = docSnap.data();
             catalogoPlatos[d.nombre] = d; 
 
-            let txtStock = `<span style="font-size:0.75rem; color:#94a3b8; font-weight:normal; margin-left:10px;">📦 ${d.stock || 0} disp.</span>`;
-            if (d.stock === 0) txtStock = `<span style="font-size:0.75rem; color:var(--danger); font-weight:bold; margin-left:10px;">🛑 AGOTADO</span>`;
-
+            // Se retiró la etiqueta de stock de la interfaz de la carta
             const html = `
             <div class="admin-row">
                 <div style="display:flex; flex-direction:column;">
-                    <div><strong>${d.nombre}</strong> ${txtStock}</div>
+                    <div><strong>${d.nombre}</strong></div>
                     <span style="font-size:0.8rem; color:var(--success); font-weight:700;">$${Number(d.precio).toLocaleString()}</span>
                 </div>
                 <div class="actions">
@@ -299,7 +276,6 @@ window.prepararEdicion = async (id) => {
     document.getElementById('name').value = d.nombre;
     document.getElementById('price').value = d.precio;
     document.getElementById('category').value = d.categoria;
-    document.getElementById('stock').value = d.stock || 0;
     document.getElementById('desc').value = d.descripcion || '';
     document.getElementById('ingredients').value = Array.isArray(d.ingredientes) ? d.ingredientes.join(',') : d.ingredientes || '';
     document.getElementById('f-title').innerText = "✏️ Editando: " + d.nombre;
@@ -315,17 +291,18 @@ window.cancelarEdicion = () => {
 document.getElementById('m-form').onsubmit = async (e) => {
     e.preventDefault();
     const id = document.getElementById('edit-id').value;
-    const stockIngresado = Number(document.getElementById('stock').value);
+    
     const datos = {
         nombre: document.getElementById('name').value,
         precio: Number(document.getElementById('price').value),
         categoria: document.getElementById('category').value,
-        stock: stockIngresado,
         descripcion: document.getElementById('desc').value,
         ingredientes: document.getElementById('ingredients').value.split(',').map(s => s.trim()),
         timestamp: serverTimestamp()
     };
-    if(!id) datos.disponible = stockIngresado > 0;
+    
+    // Al guardar uno nuevo, siempre inicia disponible
+    if(!id) datos.disponible = true;
     
     id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos);
     cancelarEdicion();
