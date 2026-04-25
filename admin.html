@@ -29,7 +29,6 @@
         .login-card { background: var(--white); padding: 40px; border-radius: 12px; text-align: center; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .login-card h1 { font-family: 'Playfair Display', serif; font-size: 2.5rem; margin-bottom: 5px; color: var(--sidebar-bg); }
         .btn-google { background: var(--info); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .btn-google:hover { background: #3367d6; }
 
         /* --- DASHBOARD LAYOUT --- */
         #admin-panel { display: none; width: 100%; height: 100vh; } 
@@ -37,72 +36,56 @@
         /* SIDEBAR */
         .sidebar { width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; height: 100vh; }
         .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .sidebar-header h2 { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--accent); letter-spacing: 2px; line-height: 1; }
-        .sidebar-header p { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
-
+        .sidebar-header h2 { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--accent); letter-spacing: 2px; }
+        
         .nav-menu { padding: 20px 0; flex: 1; overflow-y: auto; }
         .nav-item { padding: 15px 25px; color: var(--text-light); cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.95rem; border-left: 4px solid transparent; }
-        .nav-item:hover { background: var(--sidebar-hover); color: white; }
         .nav-item.active { background: var(--sidebar-hover); color: white; border-left-color: var(--accent); }
-
         .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: auto; }
-        .btn-logout { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: 0.3s; width: 100%; text-align: left; }
-        .btn-logout:hover { color: var(--danger); }
+        .btn-logout { background: none; border: none; color: var(--text-light); cursor: pointer; width: 100%; text-align: left; }
 
         /* MAIN CONTENT */
         .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--main-bg); }
-
-        .topbar { background: var(--white); height: 70px; min-height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; border-bottom: 1px solid var(--border); }
-        .topbar h3 { font-size: 1.2rem; font-weight: 600; color: var(--sidebar-bg); }
-        .user-info { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-light); }
-
-        .content-area { padding: 40px; overflow-y: auto; flex: 1; }
+        .topbar { background: var(--white); height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; border-bottom: 1px solid var(--border); }
+        .content-area { padding: 30px; overflow-y: auto; flex: 1; }
+        
         .view-section { display: none; animation: fadeIn 0.4s ease; }
         .view-section.active { display: block; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* --- COMPONENTES --- */
-        .card { background: var(--white); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid var(--border); margin-bottom: 30px; }
-        .card-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
-        
-        /* Formulario y Grillas */
+        .card { background: var(--white); border-radius: 12px; padding: 25px; border: 1px solid var(--border); margin-bottom: 30px; }
+        .card-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+        /* Pedidos Pendientes (Grandes) */
+        .pedidos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .pedido-card { background: var(--white); border-radius: 10px; border: 1px solid var(--border); border-left: 6px solid var(--accent); padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .pedido-header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+        .pedido-items { list-style: none; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-dark); }
+        .pedido-items li { margin-bottom: 8px; padding-left: 15px; position: relative; }
+        .pedido-items li::before { content: "•"; position: absolute; left: 0; color: var(--accent); font-weight: bold; }
+
+        /* Pedidos Atendidos (Lista Pequeña) */
+        .atendido-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px; border: 1px solid #edf2f7; }
+        .atendido-info { font-size: 0.9rem; font-weight: 500; }
+        .atendido-total { color: var(--success); font-weight: 700; margin-left: 15px; }
+
+        /* Formulario y Tablas de Menú */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
         .form-group.full { grid-column: span 2; }
-        label { font-size: 0.85rem; font-weight: 500; color: var(--text-light); }
-        input, select, textarea { width: 100%; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; background: #fafafa; transition: 0.3s; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); background: var(--white); }
-
-        .btn-primary { background: var(--sidebar-bg); color: var(--accent); border: none; padding: 12px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        .btn-primary:hover { background: #000; }
-
-        /* Listas / Tablas de Platos */
-        .list-header { display: grid; grid-template-columns: 2fr 1fr 1fr; padding: 15px; background: #f8fafc; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); margin-bottom: 10px; }
-        .plato-item { display: grid; grid-template-columns: 2fr 1fr 1fr; padding: 15px; border-bottom: 1px solid var(--border); align-items: center; transition: 0.2s; }
-        .plato-item:hover { background: #f8fafc; }
-        .plato-name { font-weight: 500; color: var(--sidebar-bg); }
-        .plato-price { color: var(--text-light); }
-        .action-btns { display: flex; gap: 8px; }
-        .btn-icon { padding: 6px 12px; border-radius: 6px; border: none; font-size: 0.8rem; cursor: pointer; font-weight: 500; }
+        input, select, textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #fafafa; }
+        .btn-primary { background: var(--sidebar-bg); color: var(--accent); border: none; padding: 12px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        
+        .list-header { display: grid; grid-template-columns: 2fr 1fr 1fr; padding: 15px; background: #f8fafc; border-radius: 8px; font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; }
+        .plato-item { display: grid; grid-template-columns: 2fr 1fr 1fr; padding: 15px; border-bottom: 1px solid var(--border); align-items: center; }
+        .btn-icon { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.8rem; }
         .btn-edit { background: #e0f2fe; color: #0284c7; }
         .btn-delete { background: #fee2e2; color: #ef4444; }
 
-        /* Tarjetas de Pedidos */
-        .pedidos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .pedido-card { background: var(--white); border-radius: 10px; border: 1px solid var(--border); border-left: 5px solid var(--accent); padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .pedido-card.completado { border-left-color: var(--success); opacity: 0.7; }
-        .pedido-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .pedido-header h5 { font-size: 1.1rem; }
-        .pedido-total { font-weight: 700; color: var(--success); font-size: 1.1rem; }
-        .pedido-items { list-style: none; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-light); }
-        .pedido-items li { margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px dashed var(--border); }
-
         /* Estadísticas */
-        .stat-card { padding: 30px; border-radius: 12px; color: white; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .stat-card h4 { font-weight: 500; font-size: 1rem; margin-bottom: 10px; opacity: 0.9; }
-        .stat-card h2 { font-size: 2.5rem; font-weight: 700; }
-        .ranking-list { padding-left: 20px; margin-top: 15px; line-height: 1.8; color: var(--text-dark); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .stat-card { padding: 30px; border-radius: 12px; color: white; }
     </style>
 </head>
 <body>
@@ -110,73 +93,54 @@
     <div id="login-screen">
         <div class="login-card">
             <h1>IKU</h1>
-            <p style="color: #888; font-size: 0.9rem; margin-bottom: 30px;">Panel Administrativo</p>
+            <p style="color: #888; margin-bottom: 30px;">Panel Administrativo</p>
             <button id="login-btn" class="btn-google">Acceder con Google</button>
         </div>
     </div>
 
-    <div id="admin-panel" style="display: none;">
-        
+    <div id="admin-panel">
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>IKU</h2>
-                <p>Pueblo Bello</p>
-            </div>
+            <div class="sidebar-header"><h2>IKU</h2><p>Pueblo Bello</p></div>
             <ul class="nav-menu">
-                <li class="nav-item active" onclick="cambiarVista('vista-pedidos', this)">
-                    <span>🔔</span> Pedidos en Vivo
-                </li>
-                <li class="nav-item" onclick="cambiarVista('vista-menu', this)">
-                    <span>🍔</span> Gestión de Menú
-                </li>
-                <li class="nav-item" onclick="cambiarVista('vista-estadisticas', this)">
-                    <span>📊</span> Estadísticas
-                </li>
+                <li class="nav-item active" onclick="cambiarVista('vista-pedidos', this)"><span>🔔</span> Pedidos en Vivo</li>
+                <li class="nav-item" onclick="cambiarVista('vista-menu', this)"><span>🍔</span> Gestión de Menú</li>
+                <li class="nav-item" onclick="cambiarVista('vista-estadisticas', this)"><span>📊</span> Estadísticas</li>
             </ul>
-            <div class="sidebar-footer">
-                <button class="btn-logout" id="logout-btn"><span>🚪</span> Cerrar Sesión</button>
-            </div>
+            <div class="sidebar-footer"><button class="btn-logout" id="logout-btn">🚪 Cerrar Sesión</button></div>
         </aside>
 
         <main class="main-content">
-            <header class="topbar">
-                <h3 id="topbar-title">Pedidos en Vivo</h3>
-                <div class="user-info">
-                    <span>🟢 Conectado</span>
-                </div>
-            </header>
+            <header class="topbar"><h3 id="topbar-title">Pedidos en Vivo</h3><div class="user-info">🟢 Conectado</div></header>
 
             <div class="content-area">
                 
                 <section id="vista-pedidos" class="view-section active">
                     <div class="card">
-                        <div class="card-header">
-                            <h4 style="font-size: 1.1rem; color: var(--sidebar-bg);">Cola de Pedidos</h4>
-                        </div>
+                        <div class="card-header"><h4>🔥 Cola de Pedidos (En Cocina)</h4></div>
                         <div id="lista-pedidos-realtime" class="pedidos-grid">
-                            <p style="color: #888;">Esperando que lleguen pedidos...</p>
+                            <p style="color: #888;">No hay pedidos pendientes...</p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="background: #fafafa; border-style: dashed;">
+                        <div class="card-header"><h4>✅ Pedidos Atendidos (Hoy)</h4></div>
+                        <div id="lista-atendidos">
+                            <p style="color: #888; font-size: 0.9rem;">Los pedidos listos aparecerán aquí de forma compacta.</p>
                         </div>
                     </div>
                 </section>
 
                 <section id="vista-menu" class="view-section">
-                    
                     <div class="card">
                         <div class="card-header">
-                            <h4 id="form-title" style="font-size: 1.1rem; color: var(--sidebar-bg);">Añadir Nuevo Plato</h4>
-                            <button type="button" id="close-edit-btn" style="display: none; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--text-light); line-height: 1; transition: 0.2s;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-light)'" onclick="cancelarEdicion()">×</button>
+                            <h4 id="form-title">Añadir Nuevo Plato</h4>
+                            <button type="button" id="close-edit-btn" style="display: none; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--text-light);" onclick="cancelarEdicion()">×</button>
                         </div>
                         <form id="menu-form">
                             <input type="hidden" id="edit-id">
                             <div class="form-grid">
-                                <div class="form-group">
-                                    <label>Nombre del Plato</label>
-                                    <input type="text" id="name" placeholder="Ej: Tacos al Pastor" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Precio (COP)</label>
-                                    <input type="number" id="price" placeholder="Ej: 25000" required>
-                                </div>
+                                <div class="form-group"><label>Nombre</label><input type="text" id="name" required></div>
+                                <div class="form-group"><label>Precio</label><input type="number" id="price" required></div>
                                 <div class="form-group">
                                     <label>Categoría</label>
                                     <select id="category">
@@ -185,70 +149,28 @@
                                         <option value="varios">Varios</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <label>Ingredientes (Separados por coma)</label>
-                                    <input type="text" id="ingredients" placeholder="Carne, cebolla, cilantro...">
-                                </div>
-                                <div class="form-group full">
-                                    <label>Descripción corta</label>
-                                    <textarea id="desc" rows="2" placeholder="Un texto que enamore al cliente..."></textarea>
-                                </div>
+                                <div class="form-group"><label>Ingredientes</label><input type="text" id="ingredients"></div>
+                                <div class="form-group full"><label>Descripción</label><textarea id="desc" rows="2"></textarea></div>
                             </div>
-                            <div style="margin-top: 25px; display: flex; gap: 15px;">
-                                <button type="submit" id="submit-btn" class="btn-primary">Guardar Plato</button>
-                            </div>
+                            <div style="margin-top: 20px;"><button type="submit" id="submit-btn" class="btn-primary">Guardar Plato</button></div>
                         </form>
                     </div>
 
                     <div class="card">
-                        <div class="card-header">
-                            <h4 style="font-size: 1.1rem; color: var(--sidebar-bg);">Inventario del Menú</h4>
-                        </div>
-                        
-                        <h5 style="margin: 20px 0 10px; color: var(--accent);">MENÚ DEL DÍA</h5>
-                        <div class="list-header"><span>Plato</span><span>Precio</span><span>Acciones</span></div>
-                        <div id="lista-diario" style="margin-bottom: 30px;"></div>
-
-                        <h5 style="margin: 20px 0 10px; color: var(--accent);">COMIDAS RÁPIDAS</h5>
-                        <div class="list-header"><span>Plato</span><span>Precio</span><span>Acciones</span></div>
-                        <div id="lista-rapida" style="margin-bottom: 30px;"></div>
-
-                        <h5 style="margin: 20px 0 10px; color: var(--accent);">VARIOS</h5>
-                        <div class="list-header"><span>Plato</span><span>Precio</span><span>Acciones</span></div>
+                        <div class="card-header"><h4>Inventario del Menú</h4></div>
+                        <h5 style="color: var(--accent); margin-bottom: 10px;">MENÚ DEL DÍA</h5>
+                        <div id="lista-diario"></div>
+                        <h5 style="color: var(--accent); margin: 20px 0 10px;">COMIDAS RÁPIDAS</h5>
+                        <div id="lista-rapida"></div>
+                        <h5 style="color: var(--accent); margin: 20px 0 10px;">VARIOS</h5>
                         <div id="lista-varios"></div>
                     </div>
                 </section>
 
                 <section id="vista-estadisticas" class="view-section">
-                    <div class="form-grid">
-                        <div class="stat-card" style="background: var(--sidebar-bg);">
-                            <h4 style="color: var(--accent);">Ventas de Hoy</h4>
-                            <h2 id="ventas-hoy">$0</h2>
-                        </div>
-                        <div class="stat-card" style="background: var(--info);">
-                            <h4>Ventas del Mes</h4>
-                            <h2 id="ventas-mes">$0</h2>
-                        </div>
-                    </div>
-
-                    <div class="card" style="margin-top: 30px;">
-                        <div class="card-header">
-                            <h4 style="font-size: 1.1rem; color: var(--sidebar-bg);">Rendimiento de Platos</h4>
-                        </div>
-                        <div class="form-grid">
-                            <div>
-                                <h5 style="color: var(--success); border-bottom: 2px solid var(--success); padding-bottom: 5px;">🔥 Los Más Vendidos</h5>
-                                <ol id="top-platos" class="ranking-list">
-                                    <li style="color: #888; list-style: none;">Calculando datos...</li>
-                                </ol>
-                            </div>
-                            <div>
-                                <h5 style="color: var(--danger); border-bottom: 2px solid var(--danger); padding-bottom: 5px;">❄️ Los Menos Vendidos</h5>
-                                <ul id="bottom-platos" class="ranking-list" style="list-style-type: square;">
-                                    <li style="color: #888; list-style: none;">Calculando datos...</li>
-                                </ul>
-                            </div>
-                        </div>
+                    <div class="stat-grid">
+                        <div class="stat-card" style="background: var(--sidebar-bg);"><h4 style="color: var(--accent);">Ventas Hoy</h4><h2 id="ventas-hoy">$0</h2></div>
+                        <div class="stat-card" style="background: var(--info);"><h4>Ventas Mes</h4><h2 id="ventas-mes">$0</h2></div>
                     </div>
                 </section>
 
@@ -258,21 +180,13 @@
 
     <script>
         function cambiarVista(idVista, elementoNav) {
-            const titulos = { 
-                'vista-pedidos': 'Pedidos en Vivo', 
-                'vista-menu': 'Gestión de Menú',
-                'vista-estadisticas': 'Estadísticas y Ventas'
-            };
-            document.getElementById('topbar-title').innerText = titulos[idVista];
-            
+            document.getElementById('topbar-title').innerText = elementoNav.innerText.trim();
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             elementoNav.classList.add('active');
-
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(idVista).classList.add('active');
         }
     </script>
-
     <script type="module" src="admin-script.js"></script>
 </body>
 </html>
