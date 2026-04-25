@@ -3,6 +3,20 @@ import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 
 
 let carrito = [];
 
+// Iconos Modernos
+const ICON_TRASH = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+const ICON_CLOSE = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+const toastDiv = document.createElement('div');
+toastDiv.id = 'toast';
+document.body.appendChild(toastDiv);
+
+const mostrarNotificacion = (msj) => {
+    toastDiv.innerText = msj;
+    toastDiv.classList.add("show");
+    setTimeout(() => toastDiv.classList.remove("show"), 3000);
+};
+
 window.toggleDish = (header) => {
     const dish = header.parentElement;
     const isOpened = dish.classList.contains('expanded');
@@ -17,6 +31,7 @@ window.agregarAlCarrito = (nombre, precio, id) => {
     carrito.push({ nombre, precio: parseInt(precio), nota });
     if(document.getElementById(`note-${id}`)) document.getElementById(`note-${id}`).value = '';
     actualizarCarrito();
+    mostrarNotificacion(`Añadido: ${nombre} 🛒`);
 };
 
 function actualizarCarrito() {
@@ -31,13 +46,15 @@ function actualizarCarrito() {
     carrito.forEach((item, i) => {
         total += item.precio;
         cont.innerHTML += `
-            <div style="padding:15px 0; border-bottom:1px solid #eee;">
-                <div style="display:flex; justify-content:space-between;">
+            <div class="cart-item-row">
+                <div>
                     <strong>${item.nombre}</strong>
-                    <span>$${item.precio.toLocaleString()}</span>
+                    <span style="color:var(--success); font-size:0.9rem;">$${item.precio.toLocaleString()}</span>
+                    ${item.nota ? `<span class="cart-item-note">Nota: ${item.nota}</span>` : ''}
                 </div>
-                ${item.nota ? `<p style="font-size:0.8rem; color:red; margin-top:5px;">Nota: ${item.nota}</p>` : ''}
-                <button onclick="quitar(${i})" style="color:gray; background:none; border:none; cursor:pointer; font-size:0.7rem; margin-top:8px;">Quitar</button>
+                <button onclick="quitar(${i})" style="background:none; border:none; color:#cbd5e1; cursor:pointer; transition:0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">
+                    ${ICON_TRASH}
+                </button>
             </div>`;
     });
     priceEl.innerText = `$${total.toLocaleString()}`;
@@ -48,25 +65,23 @@ window.quitar = (i) => { carrito.splice(i, 1); actualizarCarrito(); };
 window.enviarPedido = async () => {
     const cliente = document.getElementById('nombre-cliente')?.value;
     const tipo = document.getElementById('tipo-servicio')?.value;
-    const quiereWA = document.getElementById('check-whatsapp')?.checked;
-
-    if (!cliente || carrito.length === 0) return alert("Completa los datos.");
+    if (!cliente || carrito.length === 0) return alert("Completa tus datos.");
 
     const total = carrito.reduce((s, x) => s + x.precio, 0);
     try {
         await addDoc(collection(db, "pedidos"), {
             cliente, tipo, items: carrito, total, estado: "pendiente", timestamp: serverTimestamp()
         });
-        if (quiereWA) {
-            const msjWA = `*NUEVO PEDIDO IKU*%0A*Cliente:* ${cliente}%0A*Total:* $${total.toLocaleString()}`;
+        if (document.getElementById('check-whatsapp').checked) {
+            const msjWA = `*NUEVO PEDIDO IKU*%0A*Cliente:* ${cliente}%0A*Items:*%0A${carrito.map(i => `- ${i.nombre}`).join('%0A')}%0A*Total:* $${total.toLocaleString()}`;
             window.open(`https://wa.me/573210000000?text=${msjWA}`);
         }
-        alert("¡Pedido enviado!");
+        mostrarNotificacion("¡Pedido enviado! 🧑‍🍳");
         carrito = []; actualizarCarrito(); window.toggleCart();
-    } catch (e) { console.error(e); }
+    } catch (e) { alert("Error"); }
 };
 
-// Listener de Platos de Firebase
+// Listener de Platos con Ingredientes
 onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) => {
     const sections = { diario: document.getElementById('diario'), rapida: document.getElementById('rapida'), varios: document.getElementById('varios') };
     Object.values(sections).forEach(s => { if(s) s.innerHTML = ''; });
@@ -85,12 +100,12 @@ onSnapshot(query(collection(db, "platos"), orderBy("timestamp", "desc")), (sn) =
         const html = `
             <div class="dish-item">
                 <div class="dish-header" onclick="toggleDish(this)">
-                    <div><h3>${d.nombre}</h3><p style="font-size:0.8rem; color:gray;">${d.descripcion || ''}</p></div>
+                    <div><h3>${d.nombre}</h3><p style="font-size:0.85rem; color:gray;">${d.descripcion || ''}</p></div>
                     <strong class="dish-price">$${Number(d.precio).toLocaleString()}</strong>
                 </div>
                 <div class="expand-content">
                     ${ingHTML}
-                    <input type="text" id="note-${docSnap.id}" class="note-input" placeholder="¿Alguna nota especial?">
+                    <input type="text" id="note-${docSnap.id}" class="note-input" placeholder="¿Nota especial?">
                     <button class="btn-add-cart" onclick="agregarAlCarrito('${d.nombre}', '${d.precio}', '${docSnap.id}')">AÑADIR AL PEDIDO</button>
                 </div>
             </div>`;
