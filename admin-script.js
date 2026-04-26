@@ -289,3 +289,22 @@ window.renderizarPlanoMesas = function(pedidos) {
     }
     grid.innerHTML = html;
 };
+window.irAPedido = (idPedido) => {
+    // 1. Cambiamos a la pestaña de pedidos (asegúrate de que el ID coincida con tu botón de navegación)
+    const tabPedidos = document.querySelector('[onclick*="pedidos"]'); 
+    if (tabPedidos) tabPedidos.click();
+
+    // 2. Esperamos un instante a que se renderice y hacemos scroll
+    setTimeout(() => {
+        const tarjetas = document.querySelectorAll('.pedido-card');
+        tarjetas.forEach(card => {
+            // Buscamos la tarjeta que contiene el ID del pedido
+            if (card.innerHTML.includes(idPedido)) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Efecto visual de resaltado temporal
+                card.style.border = "2px solid var(--accent)";
+                setTimeout(() => card.style.border = "none", 2000);
+            }
+        });
+    }, 100);
+};
