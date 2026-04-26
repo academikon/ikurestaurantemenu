@@ -200,3 +200,68 @@ input, select, textarea { font-size: 16px !important; }
     .tabs { flex-wrap: wrap; padding: 10px 0; border-radius: 20px; }
     .tab-btn { flex: 1; text-align: center; min-width: 31%; padding: 10px 2px; font-size: 0.72rem; white-space: nowrap; }
 }
+/* --- FOOTER ULTRA COMPACTO Y MINIMALISTA --- */
+/* Reemplaza todo el bloque de estilos del footer anterior con esto */
+
+.compact-footer {
+    margin-top: 30px; /* Menos espacio arriba */
+    padding: 20px 0;   /* Padding más ajustado */
+    border-top: 1px dashed #e2e8f0; /* Borde más sutil (punteado) */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px; /* Espacio mínimo entre elementos */
+    font-family: var(--font-sans); /* Aseguramos que use Poppins */
+}
+
+.compact-ig-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary); /* Color de texto normal al inicio */
+    text-decoration: none;
+    font-weight: 400;
+    font-size: 0.75rem; /* Letra pequeña */
+    transition: 0.2s;
+}
+
+/* Icono sutil */
+.compact-ig-link svg {
+    opacity: 0.7;
+    color: var(--primary);
+}
+
+/* Efecto hover elegante: solo cambia color al accent amarillo */
+.compact-ig-link:hover {
+    color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.compact-ig-link:hover svg {
+    opacity: 1;
+    color: var(--accent);
+}
+
+.sarlab-compact {
+    font-size: 0.65rem; /* Letra ultra pequeña */
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    /*text-transform: uppercase;*/
+}
+
+.sarlab-compact p {
+    margin: 0;
+}
+
+.sarlab-compact strong {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* Ajuste móvil sutil para carrito */
+@media screen and (max-width: 768px) {
+    .compact-footer {
+        margin-bottom: 70px; /* Espacio sutil inferior */
+    }
+}
