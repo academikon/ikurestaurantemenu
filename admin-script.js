@@ -5,7 +5,7 @@ import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from
 const CORREO_MASTER = "cb01grupo@gmail.com";
 const correosAutorizados = [CORREO_MASTER, "kelly.araujotafur@gmail.com"];
 
-// Iconos
+// Iconos Minimalistas
 const ICON_PREPARE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`;
 const ICON_X = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 const ICON_EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
@@ -46,7 +46,7 @@ function escucharPedidos() {
 
             const card = document.createElement('div');
             card.className = `pedido-card ${p.estado}`;
-            card.id = `card-${p.id}`; // Para la navegación por mesas
+            card.id = `card-${p.id}`;
             
             let botonesAccion = '';
             if (p.estado === 'pendiente') {
@@ -65,123 +65,69 @@ function escucharPedidos() {
 }
 
 function actualizarMétricas() {
-    let tHoy = 0, tMes = 0, pedidosContados = 0, rechazadosContados = 0, valorRechazados = 0;
+    let tVentas = 0, tMes = 0, pedidosContados = 0, rechazadosContados = 0, valorRechazados = 0;
     let tNequi = 0, tBanco = 0, tEfectivo = 0;
-    
-    const ventasPlatos = {};
-    const usoIngredientes = {}; 
-    const ahora = new Date();
+    const ventasPlatos = {}, usoIngredientes = {}, ahora = new Date();
     const filtro = document.getElementById('periodo-selector')?.value || 'hoy';
 
     pedidosGlobales.forEach(p => {
         if(!p.timestamp) return;
         const f = p.timestamp.toDate();
-        
-        // --- LÓGICA DE FILTRADO DINÁMICO ---
         let cumpleFiltro = false;
         
         if (filtro === 'hoy') {
             cumpleFiltro = f.getDate() === ahora.getDate() && f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear();
         } else if (filtro === 'semana') {
-            const haceUnaSemana = new Date();
-            haceUnaSemana.setDate(ahora.getDate() - 7);
+            const haceUnaSemana = new Date(); haceUnaSemana.setDate(ahora.getDate() - 7);
             cumpleFiltro = f >= haceUnaSemana;
         } else if (filtro === 'mes') {
             cumpleFiltro = f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear();
-        } else {
-            cumpleFiltro = true; // 'total'
-        }
+        } else { cumpleFiltro = true; }
 
         if(cumpleFiltro) {
             if(p.estado === 'rechazado') {
-                rechazadosContados++;
-                valorRechazados += Number(p.total);
+                rechazadosContados++; valorRechazados += Number(p.total);
             } else {
-                tHoy += Number(p.total);
-                pedidosContados++;
-                
+                tVentas += Number(p.total); pedidosContados++;
                 if(p.metodoPago === 'nequi') tNequi += Number(p.total);
                 if(p.metodoPago === 'banco') tBanco += Number(p.total);
                 if(p.metodoPago === 'efectivo') tEfectivo += Number(p.total);
 
                 p.items.forEach(item => {
                     ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
-                    const ingredientesBase = menuGlobal[item.nombre] || [];
+                    const ingBase = menuGlobal[item.nombre] || [];
                     const excluidos = item.excluidos || [];
-                    ingredientesBase.forEach(ing => {
-                        if (!excluidos.includes(ing)) {
-                            usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
-                        }
-                    });
+                    ingBase.forEach(ing => { if (!excluidos.includes(ing)) usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1; });
                 });
             }
         }
-    });
-            }
-        }
-        // Actualizamos los títulos de las tarjetas según el filtro
-    const labelPeriodo = filtro === 'hoy' ? '(Hoy)' : filtro === 'semana' ? '(7d)' : filtro === 'mes' ? '(Mes)' : '(Total)';
-    
-    // Renderizado (Usamos los mismos IDs pero ahora son dinámicos)
-    const setUI = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
-    setUI('s-hoy', `$${tHoy.toLocaleString()}`);
-    setUI('s-pedidos-total', pedidosContados);
-    setUI('s-nequi', `$${tNequi.toLocaleString()}`);
-    setUI('s-bancolombia', `$${tBanco.toLocaleString()}`);
-    setUI('s-efectivo', `$${tEfectivo.toLocaleString()}`);
-    
-    //
-        // Venta mensual (solo pedidos no rechazados)
-        if(f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear() && p.estado !== 'rechazado') {
-            tMes += Number(p.total);
-        }
+        // Acumulado del mes para la tarjeta fija
+        if(f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear() && p.estado !== 'rechazado') tMes += Number(p.total);
     });
 
-    // --- RENDERIZADO EN INTERFAZ ---
     const setUI = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
-    
-    setUI('s-hoy', `$${tHoy.toLocaleString()}`);
+    setUI('s-hoy', `$${tVentas.toLocaleString()}`);
+    setUI('s-pedidos-total', pedidosContados);
     setUI('s-mes', `$${tMes.toLocaleString()}`);
-    setUI('s-pedidos-total', pedidosHoyCount);
     setUI('s-nequi', `$${tNequi.toLocaleString()}`);
     setUI('s-bancolombia', `$${tBanco.toLocaleString()}`);
     setUI('s-efectivo', `$${tEfectivo.toLocaleString()}`);
-    
-    // Cuadro de Pérdidas
+
     const rRechazados = document.getElementById('rankings-rechazados');
     if(rRechazados) {
-        rRechazados.innerHTML = `
-            <div style="width:100%; padding:20px; background:white; border-radius:12px; border:1px solid #f3f4f6; display:flex; align-items:center; gap:15px;">
-                <div style="background:#fff1f2; padding:12px; border-radius:10px; color:#e11d48;">${ICON_X}</div>
-                <div style="text-align:left;">
-                    <div style="color:var(--text-muted); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Pérdidas Hoy</div>
-                    <strong style="font-size:1.4rem; color:var(--text-main);">$${valorRechazados.toLocaleString()}</strong>
-                    <div style="font-size:0.8rem; color:#be123c;">${rechazadosHoy} pedidos cancelados</div>
-                </div>
-            </div>`;
+        rRechazados.innerHTML = `<div style="width:100%; padding:20px; background:white; border-radius:12px; border:1px solid #f3f4f6; display:flex; align-items:center; gap:15px;"><div style="background:#fff1f2; padding:12px; border-radius:10px; color:#e11d48;">${ICON_X}</div><div style="text-align:left;"><div style="color:var(--text-muted); font-size:0.75rem; font-weight:600; text-transform:uppercase;">Pérdidas Periodo</div><strong style="font-size:1.4rem;">$${valorRechazados.toLocaleString()}</strong><div style="font-size:0.8rem; color:#be123c;">${rechazadosContados} pedidos cancelados</div></div></div>`;
     }
 
-    // Top 5 Platos
     const rPlatos = document.getElementById('rankings-categoria');
     if(rPlatos) {
-        const sortedPlatos = Object.entries(ventasPlatos).sort((a,b) => b[1] - a[1]).slice(0,5);
-        rPlatos.innerHTML = sortedPlatos.map(([n,v]) => `
-            <div style="padding:12px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.9rem; font-weight:500;">${n}</span>
-                <strong style="background:var(--sidebar); color:white; padding:2px 8px; border-radius:4px; font-size:0.85rem;">${v}</strong>
-            </div>
-        `).join('') || '<p style="color:var(--text-muted); font-size:0.8rem;">Esperando ventas...</p>';
+        const sorted = Object.entries(ventasPlatos).sort((a,b) => b[1] - a[1]).slice(0,5);
+        rPlatos.innerHTML = sorted.map(([n,v]) => `<div style="padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between;"><span>${n}</span> <strong>${v}</strong></div>`).join('') || "Sin datos";
     }
 
-    // Rotación de Despensa (Ingredientes)
-    const rIngredientes = document.getElementById('rankings-ingredientes');
-    if(rIngredientes) {
+    const rIng = document.getElementById('rankings-ingredientes');
+    if(rIng) {
         const sortedIng = Object.entries(usoIngredientes).sort((a,b) => b[1] - a[1]);
-        rIngredientes.innerHTML = sortedIng.map(([n,v]) => `
-            <span style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:500;">
-                ${n} (${v})
-            </span>
-        `).join('') || '<p style="color:var(--text-muted); font-size:0.8rem;">Sin datos de consumo</p>';
+        rIng.innerHTML = sortedIng.map(([n,v]) => `<span style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; padding:4px 10px; border-radius:20px; font-size:0.75rem;">${n} (${v})</span>`).join('') || "Sin datos";
     }
 }
 
@@ -207,7 +153,6 @@ if(btnConfirmar) {
     };
 }
 
-// Navegación mesas
 window.irAPedido = (id) => {
     document.querySelector('[onclick*="v-pedidos"]').click();
     setTimeout(() => {
@@ -227,7 +172,6 @@ window.renderizarPlanoMesas = (ps) => {
     g.innerHTML = h;
 };
 
-// ... (Resto de funciones de carta e impresión iguales)
 function escucharCarta() {
     onSnapshot(collection(db, "platos"), (snap) => {
         const list = document.getElementById('inv-list'); if (!list) return;
