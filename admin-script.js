@@ -31,6 +31,7 @@ onAuthStateChanged(auth, (u) => {
 
 let menuGlobal = {}, pedidosGlobales = [], idParaEliminar = null;
 
+// --- GESTIÓN DE PEDIDOS ---
 function escucharPedidos() {
     onSnapshot(query(collection(db, "pedidos"), orderBy("timestamp", "desc")), (snap) => {
         pedidosGlobales = [];
@@ -62,6 +63,8 @@ function escucharPedidos() {
         actualizarMétricas(); renderizarPlanoMesas(pedidosGlobales);
     });
 }
+
+// --- GESTIÓN DE CARTA (ACORDEONES) ---
 function escucharCarta() {
     onSnapshot(collection(db, "platos"), (snap) => {
         const list = document.getElementById('inv-list'); 
@@ -96,7 +99,7 @@ function escucharCarta() {
                         <span style="color:var(--success); font-weight:500; font-size:0.9rem;">$${Number(it.precio).toLocaleString()}</span>
                     </div>
                     <div style="display:flex; gap:12px; align-items:center;">
-                        <button onclick="editarPlato('${it.id}', '${it.nombre}', '${it.precio}', '${it.categoria}', '${it.descripcion || ''}', '${(it.ingredientes || []).join(', ')}')" style="color:#3b82f6; border:none; background:none; cursor:pointer;">${ICON_EDIT}</button>
+                        <button onclick="editarPlato('${it.id}', '${encodeURIComponent(it.nombre)}', '${it.precio}', '${it.categoria}', '${encodeURIComponent(it.descripcion || '')}', '${(it.ingredientes || []).join(', ')}')" style="color:#3b82f6; border:none; background:none; cursor:pointer;">${ICON_EDIT}</button>
                         <button onclick="eliminarPlatoModal('${it.id}')" style="color:var(--danger); border:none; background:none; cursor:pointer;">${ICON_TRASH}</button>
                     </div>
                 </div>
@@ -113,7 +116,7 @@ function escucharCarta() {
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </div>
-                    <div id="cat-${k}" class="lista-categoria lista-categoria-oculta">
+                    <div id="cat-${k}" class="lista-categoria-oculta lista-categoria">
                         ${ph}
                     </div>
                 </div>
@@ -122,23 +125,46 @@ function escucharCarta() {
         list.innerHTML = h;
     });
 }
-// Ejemplo de cómo debería renderizarse cada bloque de categoría
-`
-<div class="categoria-wrapper">
-    <div class="categoria-header" onclick="toggleCategoria('lista-${cat}', 'chevron-${cat}')">
-        <div>
-            <h4>${nombreCategoria}</h4>
-            <span class="count-badge">${cantidadPlatos} platos</span>
-        </div>
-        <svg id="chevron-${cat}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s;">
-            <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-    </div>
-    <div id="lista-${cat}" class="lista-categoria">
-        </div>
-</div>
-`
-// FUNCION DE MÉTRICAS CORREGIDA Y UNIFICADA
+
+// --- FORMULARIO Y EDICIÓN ---
+window.editarPlato = (id, n, p, c, d, i) => {
+    document.getElementById('edit-id').value = id; 
+    document.getElementById('name').value = decodeURIComponent(n); 
+    document.getElementById('price').value = p; 
+    document.getElementById('category').value = c; 
+    document.getElementById('desc').value = decodeURIComponent(d); 
+    document.getElementById('ingredients').value = i; 
+    document.getElementById('f-title').innerText = "Editando Plato"; 
+    document.getElementById('btn-cancelar').style.display = 'block';
+    
+    // Scroll al formulario
+    document.querySelector('.form-container').scrollIntoView({ behavior: 'smooth' });
+};
+
+window.cancelarEdicion = () => { 
+    document.getElementById('m-form').reset(); 
+    document.getElementById('edit-id').value = ''; 
+    document.getElementById('f-title').innerText = "Configurar Plato"; 
+    document.getElementById('btn-cancelar').style.display = 'none'; 
+};
+
+document.getElementById('m-form').onsubmit = async (e) => {
+    e.preventDefault(); 
+    const id = document.getElementById('edit-id').value;
+    const datos = { 
+        nombre: document.getElementById('name').value, 
+        precio: Number(document.getElementById('price').value), 
+        categoria: document.getElementById('category').value, 
+        descripcion: document.getElementById('desc').value, 
+        ingredientes: document.getElementById('ingredients').value.split(',').map(s => s.trim()).filter(s => s !== ''), 
+        timestamp: serverTimestamp() 
+    };
+    if(!id) datos.disponible = true; 
+    id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos); 
+    window.cancelarEdicion();
+};
+
+// --- MÉTRICAS ---
 window.actualizarMétricas = function() {
     let tVentas = 0, tMes = 0, pedidosContados = 0, rechazadosContados = 0, valorRechazados = 0;
     let tNequi = 0, tBanco = 0, tEfectivo = 0;
@@ -180,7 +206,6 @@ window.actualizarMétricas = function() {
                 });
             }
         }
-        // Acumulado del mes siempre se calcula para la tarjeta fija
         if(f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear() && p.estado !== 'rechazado') {
             tMes += Number(p.total);
         }
@@ -210,9 +235,9 @@ window.actualizarMétricas = function() {
         const sortedIng = Object.entries(usoIngredientes).sort((a,b) => b[1] - a[1]);
         rIng.innerHTML = sortedIng.map(([n,v]) => `<span style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; padding:4px 10px; border-radius:20px; font-size:0.75rem;">${n} (${v})</span>`).join('') || "Sin datos";
     }
-}
+};
 
-// Funciones de estado
+// --- ESTADOS Y ACCIONES ---
 window.actualizarEstado = async (id, estado) => await updateDoc(doc(db, "pedidos", id), { estado });
 window.cerrarPedido = async (id, m) => await updateDoc(doc(db, "pedidos", id), { estado: 'listo', metodoPago: m });
 window.revertirPedido = async (id) => await updateDoc(doc(db, "pedidos", id), { estado: 'preparando', metodoPago: null });
@@ -234,6 +259,7 @@ if(btnConfirmar) {
     };
 }
 
+// --- NAVEGACIÓN Y MESAS ---
 window.irAPedido = (id) => {
     document.querySelector('[onclick*="v-pedidos"]').click();
     setTimeout(() => {
@@ -253,34 +279,7 @@ window.renderizarPlanoMesas = (ps) => {
     g.innerHTML = h;
 };
 
-function escucharCarta() {
-    onSnapshot(collection(db, "platos"), (snap) => {
-        const list = document.getElementById('inv-list'); if (!list) return;
-        const cats = { diario: { titulo: "Menú del Día", platos: [] }, desayuno: { titulo: "Desayunos", platos: [] }, especial: { titulo: "Especiales", platos: [] }, asado: { titulo: "Asados", platos: [] }, rapida: { titulo: "Comida Rápida", platos: [] }, bebida: { titulo: "Bebidas", platos: [] }, otros: { titulo: "Otros", platos: [] } };
-        snap.forEach(d => {
-            const it = d.data(); it.id = d.id; menuGlobal[it.nombre] = it.ingredientes || [];
-            if (cats[it.categoria]) cats[it.categoria].platos.push(it); else cats['otros'].platos.push(it);
-        });
-        let h = '';
-        for (const k in cats) {
-            if (cats[k].platos.length === 0) continue;
-            let ph = cats[k].platos.map(it => `<div style="background:white; padding:15px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;"><div style="flex:1;"><strong>${it.nombre}</strong> <span style="color:var(--text-muted);">$${Number(it.precio).toLocaleString()}</span></div><div style="display:flex; gap:16px; align-items:center;"><button onclick="editarPlato('${it.id}', '${it.nombre}', '${it.precio}', '${it.categoria}', '${it.descripcion || ''}', '${(it.ingredientes || []).join(', ')}')" style="color:#3b82f6; border:none; background:none;">${ICON_EDIT}</button><button onclick="eliminarPlatoModal('${it.id}')" style="color:var(--danger); border:none; background:none;">${ICON_TRASH}</button></div></div>`).join('');
-            h += `<div class="admin-group"><div class="admin-group-header" onclick="toggleCategoria('cat-${k}', 'chev-${k}')"><strong>${cats[k].titulo} (${cats[k].platos.length})</strong></div><div id="cat-${k}" class="lista-categoria-oculta">${ph}</div></div>`;
-        }
-        list.innerHTML = h;
-    });
-}
-
-window.editarPlato = (id, n, p, c, d, i) => {
-    document.getElementById('edit-id').value = id; document.getElementById('name').value = n; document.getElementById('price').value = p; document.getElementById('category').value = c; document.getElementById('desc').value = d; document.getElementById('ingredients').value = i; document.getElementById('f-title').innerText = "Editando Plato"; document.getElementById('btn-cancelar').style.display = 'block';
-};
-window.cancelarEdicion = () => { document.getElementById('m-form').reset(); document.getElementById('edit-id').value = ''; document.getElementById('f-title').innerText = "Configurar Plato"; document.getElementById('btn-cancelar').style.display = 'none'; };
-document.getElementById('m-form').onsubmit = async (e) => {
-    e.preventDefault(); const id = document.getElementById('edit-id').value;
-    const datos = { nombre: document.getElementById('name').value, precio: Number(document.getElementById('price').value), categoria: document.getElementById('category').value, descripcion: document.getElementById('desc').value, ingredientes: document.getElementById('ingredients').value.split(',').map(s => s.trim()).filter(s => s !== ''), timestamp: serverTimestamp() };
-    if(!id) datos.disponible = true; id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos); window.cancelarEdicion();
-};
-
+// --- IMPRESIÓN ---
 window.imprimirComanda = (ps) => {
     const p = JSON.parse(decodeURIComponent(ps));
     const div = document.createElement('div');
