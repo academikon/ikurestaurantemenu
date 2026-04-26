@@ -258,19 +258,34 @@ document.getElementById('m-form').onsubmit = async (e) => {
 
 // --- RENDERIZADO FINAL ---
 window.renderizarPlanoMesas = function(pedidos) {
-    const grid = document.getElementById('grid-mesas'); if (!grid) return;
+    const grid = document.getElementById('grid-mesas'); 
+    if (!grid) return;
+    
     const mesasActivas = pedidos.filter(p => p.estado !== 'listo' && p.estado !== 'rechazado' && p.cliente.toLowerCase().includes('mesa'));
+    
     let html = '';
     for(let i = 1; i <= 12; i++) {
-        const nombreMesa = `Mesa ${i}`; const pMesa = mesasActivas.find(p => p.cliente.toLowerCase() === nombreMesa.toLowerCase());
-        html += pMesa ? `<div class="mesa-card mesa-ocupada"><h3>${nombreMesa}</h3><span style="font-size:0.75rem; background:var(--accent); padding:2px 6px; border-radius:4px;">OCUPADA</span><div style="margin-top:8px;">$${Number(pMesa.total).toLocaleString()}</div></div>` : `<div class="mesa-card mesa-libre"><h3>${nombreMesa}</h3><span style="color:var(--success);">Disponible</span></div>`;
+        const nombreMesa = `Mesa ${i}`; 
+        const pMesa = mesasActivas.find(p => p.cliente.toLowerCase() === nombreMesa.toLowerCase());
+        
+        if (pMesa) {
+            // Mesa Ocupada: Ahora tiene un onclick que busca el ID del pedido
+            html += `
+                <div class="mesa-card mesa-ocupada" 
+                     onclick="irAPedido('${pMesa.id}')" 
+                     style="cursor:pointer; transition: transform 0.2s;">
+                    <h3>${nombreMesa}</h3>
+                    <span style="font-size:0.75rem; background:var(--accent); padding:2px 6px; border-radius:4px;">OCUPADA</span>
+                    <div style="margin-top:8px;">$${Number(pMesa.total).toLocaleString()}</div>
+                </div>`;
+        } else {
+            // Mesa Libre
+            html += `
+                <div class="mesa-card mesa-libre">
+                    <h3>${nombreMesa}</h3>
+                    <span style="color:var(--success);">Disponible</span>
+                </div>`;
+        }
     }
     grid.innerHTML = html;
-};
-
-window.imprimirComanda = function(pJsonStr) {
-    const p = JSON.parse(decodeURIComponent(pJsonStr));
-    const div = document.createElement('div');
-    div.innerHTML = `<div id="ticket-impresion"><h2 style="text-align:center;">IKU</h2><hr><p><strong>Cliente:</strong> ${p.cliente}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p><hr><ul style="list-style:none; padding:0;">${p.items.map(i => `<li><strong>1x ${i.nombre}</strong> ${i.excluidos?.length > 0 ? `<br><small>- Sin: ${i.excluidos.join(', ')}</small>` : ''}</li>`).join('')}</ul><hr><h3 style="text-align:right;">Total: $${Number(p.total).toLocaleString()}</h3></div>`;
-    document.body.appendChild(div); window.print(); document.body.removeChild(div);
 };
