@@ -107,6 +107,18 @@ function actualizarCarrito() {
 }
 
 window.quitar = (i) => { carrito.splice(i, 1); actualizarCarrito(); };
+// Cerrar el carrito si se hace clic fuera del contenido blanco
+document.addEventListener('click', (e) => {
+    const cartModal = document.getElementById('cart-modal');
+    const cartFab = document.querySelector('.cart-fab');
+    
+    // Si el carrito está abierto y el clic no es dentro del carrito ni en el botón flotante
+    if (cartModal.classList.contains('open') && 
+        !cartModal.contains(e.target) && 
+        !cartFab.contains(e.target)) {
+        toggleCart();
+    }
+});
 
 // --- ENVÍO DE PEDIDO ---
 window.enviarPedido = async () => {
