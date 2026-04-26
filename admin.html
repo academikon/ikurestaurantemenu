@@ -57,7 +57,7 @@
                         <div class="admin-group">
                             <div class="admin-group-header" onclick="toggleAtendidos()" style="color: var(--success); cursor: pointer; display: flex; justify-content: space-between;">
                                 <span>Atendidos Hoy</span>
-                                <svg id="chevron-atendidos" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: 0.3s;"><polyline points="6 9 12 15 18 9"/></svg>
+                                <svg id="chevron-atendidos" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s;"><polyline points="6 9 12 15 18 9"/></svg>
                             </div>
                             <div id="l-atendidos" class="lista-atendidos-oculta" style="margin-top: 15px;"></div>
                         </div>
@@ -137,6 +137,19 @@
         </main>
     </div>
 
+    <div id="delete-modal" style="display:none; position:fixed; inset:0; background:rgba(15,17,21,0.6); backdrop-filter: blur(4px); justify-content:center; align-items:center; z-index:1000;">
+        <div style="background:white; padding:32px; border-radius:16px; text-align:center; max-width:400px; width:90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+            <svg style="margin: 0 auto 16px auto; color: var(--danger);" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <h3 id="modal-title" style="margin-bottom:24px; font-weight: 500;">¿Confirmar acción?</h3>
+            <div style="display:flex; gap:12px;">
+                <button onclick="closeModal()" class="btn-action btn-outline" style="flex:1;">Cancelar</button>
+                <button id="confirm-delete-btn" class="btn-action" style="flex:1; background:var(--danger); color:white; border:none;">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="notif-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3" preload="auto"></audio>
+
     <script type="module" src="admin-script.js"></script>
     <script>
         function cambiarVista(id, el) {
@@ -150,6 +163,15 @@
             const c = document.getElementById('chevron-atendidos');
             l.classList.toggle('lista-atendidos-oculta');
             c.style.transform = l.classList.contains('lista-atendidos-oculta') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+        function toggleCategoria(listaId, chevronId) {
+            const l = document.getElementById(listaId);
+            const c = document.getElementById(chevronId);
+            l.classList.toggle('lista-categoria-oculta');
+            c.style.transform = l.classList.contains('lista-categoria-oculta') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+        function closeModal() {
+            document.getElementById('delete-modal').style.display = 'none';
         }
     </script>
 </body>
