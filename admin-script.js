@@ -1,5 +1,5 @@
 import { db, auth } from './firebase-config.js';
-import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, getDoc, getDocs, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const CORREO_MASTER = "cb01grupo@gmail.com";
@@ -37,6 +37,8 @@ function escucharPedidos() {
         pedidosGlobales = [];
         const lp = document.getElementById('l-pendientes');
         const la = document.getElementById('l-atendidos');
+        if(!lp || !la) return;
+
         lp.innerHTML = ''; la.innerHTML = '';
         
         snapshot.docs.forEach(docSnap => {
@@ -86,7 +88,7 @@ function escucharPedidos() {
                                     <option value="efectivo" ${p.metodoPago === 'efectivo' ? 'selected' : ''}>Efectivo</option>
                                 </select>
                             </div>
-                            <button onclick="revertirPedido('${p.id}')" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline;">Revertir a Preparando</button>
+                            <button onclick="revertirPedido('${p.id}')" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline;">Revertir</button>
                         </div>` : ''
                     }
                 </div>
@@ -122,7 +124,6 @@ function actualizarMétricas() {
 
         p.items.forEach(item => {
             ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
-            
             const ingrs = menuGlobal[item.nombre] || [];
             ingrs.forEach(ing => {
                 usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
@@ -141,27 +142,21 @@ function actualizarMétricas() {
             .sort((a,b) => b[1] - a[1]).slice(0,5)
             .map(([n,v]) => `<div style="padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between;"><span>${n}</span> <strong>${v}</strong></div>`).join('');
     }
-    if(document.getElementById('rankings-ingredientes')) {
-        document.getElementById('rankings-ingredientes').innerHTML = Object.entries(usoIngredientes)
-            .sort((a,b) => b[1] - a[1])
-            .map(([n,v]) => `<span style="background:var(--sidebar); color:white; padding:4px 10px; border-radius:20px; font-size:0.8rem;">${n} (${v})</span>`).join('');
-    }
 }
 
-// --- FUNCIONES DE ESTADO ÁGIL ---
+// --- FUNCIONES DE ESTADO ---
 window.actualizarEstado = async (id, estado) => await updateDoc(doc(db, "pedidos", id), { estado });
 window.cerrarPedido = async (id, metodoPago) => await updateDoc(doc(db, "pedidos", id), { estado: 'listo', metodoPago: metodoPago });
 window.revertirPedido = async (id) => await updateDoc(doc(db, "pedidos", id), { estado: 'preparando', metodoPago: null });
 window.cambiarPago = async (id, nuevoMetodo) => await updateDoc(doc(db, "pedidos", id), { metodoPago: nuevoMetodo });
 window.toggleDisponibilidad = async (id, disp) => await updateDoc(doc(db, "platos", id), { disponible: disp });
 
-// --- LÓGICA DE CARTA AGRUPADA ---
+// --- LÓGICA DE CARTA ---
 function escucharCarta() {
     onSnapshot(collection(db, "platos"), (snap) => {
         const list = document.getElementById('inv-list');
         if (!list) return;
 
-        // 1. Definir las categorías con sus títulos y un array vacío para sus platos
         const categorias = {
             diario: { titulo: "Menú del Día", platos: [] },
             desayuno: { titulo: "Desayunos", platos: [] },
@@ -172,7 +167,6 @@ function escucharCarta() {
             otros: { titulo: "Otros", platos: [] }
         };
 
-        // 2. Llenar las categorías con los datos de Firebase
         snap.forEach(d => {
             const item = d.data();
             item.id = d.id;
@@ -187,7 +181,6 @@ function escucharCarta() {
 
         actualizarMétricas();
 
-        // 3. Generar el HTML
         let htmlFinal = '';
         for (const key in categorias) {
             const cat = categorias[key];
@@ -216,8 +209,8 @@ function escucharCarta() {
             htmlFinal += `
             <div class="admin-group" style="margin-bottom: 15px;">
                 <div class="admin-group-header" onclick="toggleCategoria('cat-${key}', 'chev-${key}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border);">
-                    <strong>${cat.titulo} (${cat.platos.length})</strong>
-                    <svg id="chev-${key}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    <strong style="color: var(--sidebar); font-size: 1rem;">${cat.titulo} (${cat.platos.length})</strong>
+                    <svg id="chev-${key}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s;"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
                 <div id="cat-${key}" class="lista-categoria-oculta" style="margin-top: 12px; padding: 0 4px;">
                     ${platosHtml}
@@ -228,65 +221,7 @@ function escucharCarta() {
     });
 }
 
-        snap.forEach(d => {
-            const item = d.data();
-            item.id = d.id;
-            
-            menuGlobal[item.nombre] = item.ingredientes || [];
-
-            if (categorias[item.categoria]) {
-                categorias[item.categoria].platos.push(item);
-            } else {
-                categorias['otros'].platos.push(item);
-            }
-        });
-
-        actualizarMétricas();
-
-        let htmlFinal = '';
-        for (const key in categorias) {
-            const cat = categorias[key];
-            if (cat.platos.length === 0) continue;
-
-            let platosHtml = '';
-            cat.platos.forEach(item => {
-                const ingTexto = (item.ingredientes || []).join(', ');
-                
-                platosHtml += `
-                <div style="background:white; padding:15px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="flex:1;">
-                        <strong style="font-size:1.05rem;">${item.nombre}</strong> <span style="color:var(--text-muted); font-size:0.95rem;">- $${Number(item.precio).toLocaleString()}</span><br>
-                        ${item.descripcion ? `<span style="font-size:0.85rem; color:#6b7280; display:block; margin-top:4px;">${item.descripcion}</span>` : ''}
-                        ${item.ingredientes && item.ingredientes.length > 0 ? `<div style="margin-top:6px;">${item.ingredientes.map(i => `<span style="background:#f1f5f9; padding:3px 8px; border-radius:6px; font-size:0.75rem; margin-right:4px;">${i}</span>`).join('')}</div>` : ''}
-                    </div>
-                    <div style="display:flex; gap:16px; align-items:center;">
-                        <label class="switch">
-                            <input type="checkbox" ${item.disponible !== false ? 'checked' : ''} onchange="toggleDisponibilidad('${item.id}', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                        <button onclick="editarPlato('${item.id}', '${item.nombre}', '${item.precio}', '${item.categoria}', '${item.descripcion || ''}', '${ingTexto}')" style="color:#3b82f6; border:none; background:none; cursor:pointer;" title="Editar">${ICON_EDIT}</button>
-                        <button onclick="eliminarPlatoModal('${item.id}')" style="color:var(--danger); border:none; background:none; cursor:pointer;" title="Eliminar">${ICON_TRASH}</button>
-                    </div>
-                </div>`;
-            });
-
-            htmlFinal += `
-            <div class="admin-group" style="margin-bottom: 15px;">
-                <div class="admin-group-header" onclick="toggleCategoria('cat-${key}', 'chev-${key}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                    <strong style="color: var(--sidebar); font-size: 1rem;">${cat.titulo} <span style="color:var(--text-muted); font-size:0.85rem; font-weight:normal;">(${cat.platos.length} platos)</span></strong>
-                    <svg id="chev-${key}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s; transform: rotate(0deg);"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div id="cat-${key}" class="lista-categoria-oculta" style="margin-top: 12px; padding: 0 4px;">
-                    ${platosHtml}
-                </div>
-            </div>`;
-        }
-
-        list.innerHTML = htmlFinal;
-    });
-}
-
-// --- LÓGICA PARA EL MODAL PERSONALIZADO ---
+// --- MODALES Y EDICIÓN ---
 let idParaEliminar = null;
 
 window.eliminarPlatoModal = (id) => {
@@ -341,7 +276,7 @@ document.getElementById('m-form').onsubmit = async (e) => {
     window.cancelarEdicion();
 };
 
-// --- MESAS E IMPRESIÓN ---
+// --- PLANO DE MESAS ---
 window.renderizarPlanoMesas = function(pedidos) {
     const grid = document.getElementById('grid-mesas');
     if (!grid) return;
@@ -354,40 +289,40 @@ window.renderizarPlanoMesas = function(pedidos) {
         
         if(pMesa) {
             html += `
-            <div class="mesa-card mesa-ocupada" onclick="cambiarVista('v-pedidos', document.querySelector('.nav-item:nth-child(2)'))">
+            <div class="mesa-card mesa-ocupada">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: #d97706;"><path d="M17 11h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h2"/><path d="M9 11V6a3 3 0 0 1 6 0v5"/><path d="M12 11v6"/></svg>
                 <h3 style="margin-bottom:4px; font-weight:600;">${nombreMesa}</h3>
-                <span style="font-size:0.75rem; background:var(--accent); color:#000; padding:2px 6px; border-radius:4px; font-weight: 500;">OCUPADA</span>
-                <div style="font-size:0.9rem; margin-top:8px; font-weight:600; color:var(--text-main);">$${Number(pMesa.total).toLocaleString()}</div>
+                <span style="font-size:0.75rem; background:var(--accent); color:#000; padding:2px 6px; border-radius:4px;">OCUPADA</span>
+                <div style="font-size:0.9rem; margin-top:8px; font-weight:600;">$${Number(pMesa.total).toLocaleString()}</div>
             </div>`;
         } else {
             html += `
             <div class="mesa-card mesa-libre">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: var(--success); opacity: 0.5;"><rect x="3" y="8" width="18" height="4" rx="1"/><line x1="12" y1="8" x2="12" y2="21"/><line x1="19" y1="12" x2="19" y2="21"/><line x1="5" y1="12" x2="5" y2="21"/></svg>
                 <h3 style="margin-bottom:4px; font-weight:600;">${nombreMesa}</h3>
-                <span style="font-size:0.8rem; color:var(--success); font-weight: 500;">Disponible</span>
+                <span style="font-size:0.8rem; color:var(--success);">Disponible</span>
             </div>`;
         }
     }
     grid.innerHTML = html;
 };
 
+// --- IMPRESIÓN ---
 window.imprimirComanda = function(pJsonStr) {
     const p = JSON.parse(decodeURIComponent(pJsonStr));
     const fecha = new Date().toLocaleString();
     let ticketHTML = `
         <div id="ticket-impresion">
             <h2 style="text-align:center; margin-bottom:5px;">IKU RESTAURANTE</h2>
-            <p style="text-align:center; margin-top:0; font-size:12px;">Comanda</p>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
-            <p style="margin: 5px 0;"><strong>Cliente:</strong> ${p.cliente}</p>
-            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${fecha}</p>
+            <p><strong>Cliente:</strong> ${p.cliente}</p>
+            <p><strong>Fecha:</strong> ${fecha}</p>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
-            <ul style="list-style:none; padding:0; margin:0;">
-                ${p.items.map(i => `<li style="margin-bottom:8px; font-size: 14px;"><strong>1x ${i.nombre}</strong> <br>${i.nota ? `<span style="font-size:12px; margin-left:15px;">- Nota: ${i.nota}</span>` : ''}</li>`).join('')}
+            <ul style="list-style:none; padding:0;">
+                ${p.items.map(i => `<li style="margin-bottom:8px;"><strong>1x ${i.nombre}</strong> ${i.nota ? `<br><small>- ${i.nota}</small>` : ''}</li>`).join('')}
             </ul>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
-            <h3 style="text-align:right; margin: 5px 0;">Total: $${Number(p.total).toLocaleString()}</h3>
+            <h3 style="text-align:right;">Total: $${Number(p.total).toLocaleString()}</h3>
         </div>
     `;
     const div = document.createElement('div');
