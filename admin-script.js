@@ -5,7 +5,6 @@ import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from
 const CORREO_MASTER = "cb01grupo@gmail.com";
 const correosAutorizados = [CORREO_MASTER, "kelly.araujotafur@gmail.com"];
 
-// Iconos Minimalistas
 const ICON_PREPARE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`;
 const ICON_X = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 const ICON_EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
@@ -64,119 +63,52 @@ function escucharPedidos() {
     });
 }
 
-function actualizarMétricas() {
+// FUNCION DE MÉTRICAS CORREGIDA Y UNIFICADA
+window.actualizarMétricas = function() {
     let tVentas = 0, tMes = 0, pedidosContados = 0, rechazadosContados = 0, valorRechazados = 0;
     let tNequi = 0, tBanco = 0, tEfectivo = 0;
     
     const ventasPlatos = {};
     const usoIngredientes = {}; 
     const ahora = new Date();
-    
-    // CAPTURAR EL VALOR DEL SELECTOR
     const filtro = document.getElementById('periodo-selector')?.value || 'hoy';
 
     pedidosGlobales.forEach(p => {
         if(!p.timestamp) return;
         const f = p.timestamp.toDate();
-        
-        // Lógica de comparación de fechas
         let cumpleFiltro = false;
         
-        const esMismoDia = f.getDate() === ahora.getDate() && 
-                           f.getMonth() === ahora.getMonth() && 
-                           f.getFullYear() === ahora.getFullYear();
+        const esMismoDia = f.getDate() === ahora.getDate() && f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear();
 
-        if (filtro === 'hoy') {
-            cumpleFiltro = esMismoDia;
-        } else if (filtro === 'semana') {
-            const haceUnaSemana = new Date();
-            haceUnaSemana.setDate(ahora.getDate() - 7);
-            cumpleFiltro = f >= haceUnaSemana;
+        if (filtro === 'hoy') cumpleFiltro = esMismoDia;
+        else if (filtro === 'semana') {
+            const hace7 = new Date(); hace7.setDate(ahora.getDate() - 7);
+            cumpleFiltro = f >= hace7;
         } else if (filtro === 'mes') {
             cumpleFiltro = f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear();
-        } else if (filtro === 'total') {
-            cumpleFiltro = true;
-        }
+        } else if (filtro === 'total') cumpleFiltro = true;
 
         if(cumpleFiltro) {
             if(p.estado === 'rechazado') {
-                rechazadosContados++;
-                valorRechazados += Number(p.total);
+                rechazadosContados++; valorRechazados += Number(p.total);
             } else {
-                tVentas += Number(p.total);
-                pedidosContados++;
-                
+                tVentas += Number(p.total); pedidosContados++;
                 if(p.metodoPago === 'nequi') tNequi += Number(p.total);
                 if(p.metodoPago === 'banco') tBanco += Number(p.total);
                 if(p.metodoPago === 'efectivo') tEfectivo += Number(p.total);
 
-                // Top Platos e Ingredientes
                 p.items.forEach(item => {
                     ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
                     const ingBase = menuGlobal[item.nombre] || [];
                     const excluidos = item.excluidos || [];
-                    ingBase.forEach(ing => {
-                        if (!excluidos.includes(ing)) {
-                            usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
-                        }
-                    });
+                    ingBase.forEach(ing => { if (!excluidos.includes(ing)) usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1; });
                 });
             }
         }
-        // El acumulado del mes siempre se calcula para la tarjeta fija si lo deseas
+        // Acumulado del mes siempre se calcula para la tarjeta fija
         if(f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear() && p.estado !== 'rechazado') {
             tMes += Number(p.total);
         }
-    });
-
-    // RENDERIZADO (IDs del HTML)
-    const setUI = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
-    
-    setUI('s-hoy', `$${tVentas.toLocaleString()}`);
-    setUI('s-pedidos-total', pedidosContados);
-    setUI('s-mes', `$${tMes.toLocaleString()}`);
-    setUI('s-nequi', `$${tNequi.toLocaleString()}`);
-    setUI('s-bancolombia', `$${tBanco.toLocaleString()}`);
-    setUI('s-efectivo', `$${tEfectivo.toLocaleString()}`);
-
-    // Refrescar rankings
-    renderizarRankings(ventasPlatos, usoIngredientes, valorRechazados, rechazadosContados);
-}
-
-// Función auxiliar para limpiar el código de arriba
-function renderizarRankings(ventasPlatos, usoIngredientes, valorRechazados, rechazadosContados) {
-    const rPlatos = document.getElementById('rankings-categoria');
-    if(rPlatos) {
-        const sorted = Object.entries(ventasPlatos).sort((a,b) => b[1] - a[1]).slice(0,5);
-        rPlatos.innerHTML = sorted.map(([n,v]) => `
-            <div style="padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between;">
-                <span>${n}</span> <strong>${v}</strong>
-            </div>`).join('') || "Sin datos";
-    }
-
-    const rIng = document.getElementById('rankings-ingredientes');
-    if(rIng) {
-        const sortedIng = Object.entries(usoIngredientes).sort((a,b) => b[1] - a[1]);
-        rIng.innerHTML = sortedIng.map(([n,v]) => `
-            <span style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; padding:4px 10px; border-radius:20px; font-size:0.75rem;">${n} (${v})</span>
-        `).join('') || "Sin datos";
-    }
-
-    const rRechazados = document.getElementById('rankings-rechazados');
-    if(rRechazados) {
-        rRechazados.innerHTML = `
-            <div style="width:100%; padding:20px; background:white; border-radius:12px; border:1px solid #f3f4f6; display:flex; align-items:center; gap:15px;">
-                <div style="background:#fff1f2; padding:12px; border-radius:10px; color:#e11d48;">${ICON_X}</div>
-                <div style="text-align:left;">
-                    <div style="color:var(--text-muted); font-size:0.75rem; font-weight:600; text-transform:uppercase;">Pérdidas Periodo</div>
-                    <strong style="font-size:1.4rem;">$${valorRechazados.toLocaleString()}</strong>
-                    <div style="font-size:0.8rem; color:#be123c;">${rechazadosContados} pedidos cancelados</div>
-                </div>
-            </div>`;
-    }
-}
-        // Acumulado del mes para la tarjeta fija
-        if(f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear() && p.estado !== 'rechazado') tMes += Number(p.total);
     });
 
     const setUI = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
@@ -277,6 +209,6 @@ document.getElementById('m-form').onsubmit = async (e) => {
 window.imprimirComanda = (ps) => {
     const p = JSON.parse(decodeURIComponent(ps));
     const div = document.createElement('div');
-    div.innerHTML = `<div id="ticket-impresion"><h2 style="text-align:center;">IKU</h2><hr><p><strong>Cliente:</strong> ${p.cliente}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p><hr><ul style="list-style:none; padding:0;">${p.items.map(i => `<li><strong>1x ${i.nombre}</strong> ${i.excluidos?.length > 0 ? `<br><small>- Sin: ${i.excluidos.join(', ')}</small>` : ''}</li>`).join('')}</ul><hr><h3 style="text-align:right;">Total: $${Number(p.total).toLocaleString()}</h3></div>`;
+    div.innerHTML = `<div id="ticket-impresion"><h2 style="text-align:center;">IKU</h2><hr><p><strong>Cliente:</strong> ${p.cliente}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p><hr><ul style="list-style:none; padding:0;">${p.items.map(i => `<li><strong style="font-size:1.1rem;">1x ${i.nombre}</strong> ${i.excluidos?.length > 0 ? `<br><small style="color:red; font-weight:bold;">- Sin: ${i.excluidos.join(', ')}</small>` : ''}</li>`).join('')}</ul><hr><h3 style="text-align:right;">Total: $${Number(p.total).toLocaleString()}</h3></div>`;
     document.body.appendChild(div); window.print(); document.body.removeChild(div);
 };
