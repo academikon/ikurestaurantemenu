@@ -57,7 +57,9 @@ function escucharPedidos() {
             card.className = `pedido-card ${p.estado}`;
             
             let botonesAccion = '';
+            
             if (p.estado === 'pendiente') {
+                // Estado inicial: Preparar o Rechazar (si se arrepienten antes de empezar)
                 botonesAccion = `
                     <div style="display:flex; gap:8px;">
                         <button onclick="actualizarEstado('${p.id}', 'preparando')" class="btn-estado btn-preparar" style="flex:3; background: var(--sidebar); color: var(--accent); border: 1px solid var(--accent); display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -68,14 +70,22 @@ function escucharPedidos() {
                         </button>
                     </div>`;
             } else if (p.estado === 'preparando') {
+                // Estado intermedio: Cobrar (Entrega) o Rechazar (Si cancelan en el proceso)
                 botonesAccion = `
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
                         <button onclick="cerrarPedido('${p.id}', 'nequi')" class="btn-pago nequi" style="font-size:0.7rem; letter-spacing:1px;">NEQUI</button>
                         <button onclick="cerrarPedido('${p.id}', 'banco')" class="btn-pago banco" style="font-size:0.7rem; letter-spacing:1px;">BANCO</button>
                         <button onclick="cerrarPedido('${p.id}', 'efectivo')" class="btn-pago efectivo" style="font-size:0.7rem; letter-spacing:1px;">EFECTIVO</button>
-                    </div>`;
+                    </div>
+                    <button onclick="rechazarPedido('${p.id}')" class="btn-action" style="width:100%; background:#f9fafb; color:#ef4444; border: 1px solid #fee2e2; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.8rem;">
+                        ${ICON_X} RECHAZAR PEDIDO ACTUAL
+                    </button>`;
             } else if (p.estado === 'listo') {
-                botonesAccion = `<button onclick="revertirPedido('${p.id}')" class="btn-action btn-outline" style="width:100%; font-size:0.8rem;">⬅️ Revertir</button>`;
+                // Estado final: Revertir (Si te equivocaste de método de pago o toca "revender" el plato)
+                botonesAccion = `
+                    <button onclick="revertirPedido('${p.id}')" class="btn-action btn-outline" style="width:100%; font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        ${ICON_PREPARE} REVERTIR Y REASIGNAR
+                    </button>`;
             }
 
             card.innerHTML = `
