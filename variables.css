@@ -1,22 +1,25 @@
-/* variables.css */
 :root {
     /* Colores de Marca */
-    --primary: #0f1115;      /* El negro oscuro de IKU */
-    --accent: #ffcc00;       /* El amarillo característico */
+    --primary: #0f1115;
+    --accent: #ffcc00;
     --white: #ffffff;
     
     /* Colores de Interfaz */
-    --bg-main: #f8fafc;      /* Fondo limpio */
-    --bg-sidebar: #0f1115;   /* Fondo admin lateral */
+    --bg-main: #f8fafc;
+    --bg-sidebar: #0f1115;
     
     /* Estados */
-    --success: #10b981;      /* Verde para completado */
-    --danger: #ef4444;       /* Rojo para eliminar/error */
+    --success: #10b981;
+    --danger: #ef4444;
     
     /* Tipografía y Bordes */
     --text-main: #111827;
     --text-muted: #64748b;
     --border: #e5e7eb;
+    
+    /* Animaciones y Sombras */
+    --modal-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     
     /* Fuentes */
     --font-main: 'Poppins', sans-serif;
