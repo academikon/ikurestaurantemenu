@@ -62,6 +62,7 @@ function escucharCarta() {
 
         const cats = { 
             diario: { titulo: "Menú del Día", platos: [] }, 
+            almuerzo: { titulo: "Menú del Día", platos: [] },
             desayuno: { titulo: "Desayunos", platos: [] }, 
             especial: { titulo: "Especiales", platos: [] }, 
             asado: { titulo: "Asados", platos: [] }, 
