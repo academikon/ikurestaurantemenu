@@ -140,3 +140,23 @@ textarea { height: 80px; resize: none; }
     .main-content { padding: 15px; }
     .nav-item span { display: block; }
 }
+.mesas-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.mesa-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px solid var(--border);
+    transition: 0.3s;
+}
+
+.mesa-card svg { width: 40px; color: var(--text-muted); margin-bottom: 10px; }
+.mesa-libre { border-color: var(--success); }
+.mesa-ocupada { border-color: var(--accent); background: #fffbeb; }
+.mesa-ocupada svg { color: var(--accent); }
