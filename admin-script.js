@@ -58,7 +58,7 @@ function escucharPedidos() {
                 </div>
                 <div style="margin-bottom:15px; padding-left: 10px; border-left: 2px solid var(--border);">
                     ${p.items.map(i => `
-                        <div style="font-size:0.95rem; margin-bottom:6px;">
+                        <div style="font-size:0.95rem; margin-bottom:4px;">
                             • 1x <strong>${i.nombre}</strong> 
                             ${i.excluidos && i.excluidos.length > 0 ? 
                                 `<div style="color:var(--danger); font-size:0.8rem; margin-left:12px; font-weight:600;">❌ SIN: ${i.excluidos.join(', ')}</div>` 
@@ -67,8 +67,7 @@ function escucharPedidos() {
                         </div>
                     `).join('')}
                 </div>
-                `;
-            // El resto de la lógica de botones sigue igual...
+            `;
             if (p.estado === 'listo') la.appendChild(card);
             else lp.appendChild(card);
         });
@@ -78,61 +77,52 @@ function escucharPedidos() {
 }
 
 function actualizarMétricas() {
-    let tHoy = 0, pedidosHoy = 0;
+    let tHoy = 0, tMes = 0, pedidosHoyCount = 0;
+    let tNequi = 0, tBanco = 0, tEfectivo = 0;
+    
     const ventasPlatos = {};
-    const usoIngredientes = {};       // Lo que SÍ se usó (Verde)
-    const ingredientesRechazados = {}; // Lo que el cliente QUITÓ (Rojo)
+    const usoIngredientes = {};       
+    const ingredientesRechazados = {}; 
+    
     const hoy = new Date();
 
     pedidosGlobales.forEach(p => {
-        const f = p.timestamp?.toDate();
-        if(f && f.getDate() === hoy.getDate() && f.getMonth() === hoy.getMonth()) {
-            tHoy += Number(p.total);
-            pedidosHoy++;
+        if(p.timestamp) {
+            const f = p.timestamp.toDate();
+            const esHoy = f.getDate() === hoy.getDate() && 
+                          f.getMonth() === hoy.getMonth() && 
+                          f.getFullYear() === hoy.getFullYear();
 
-            p.items.forEach(item => {
-                // Ranking de Platos
-                ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
-                
-                // Inteligencia de Ingredientes
-                const ingredientesBase = menuGlobal[item.nombre] || [];
-                const excluidosPorCliente = item.excluidos || [];
+            if(esHoy) {
+                tHoy += Number(p.total);
+                pedidosHoyCount++;
+                if(p.metodoPago === 'nequi') tNequi += Number(p.total);
+                if(p.metodoPago === 'banco') tBanco += Number(p.total);
+                if(p.metodoPago === 'efectivo') tEfectivo += Number(p.total);
 
-                ingredientesBase.forEach(ing => {
-                    if (excluidosPorCliente.includes(ing)) {
-                        // El cliente lo tachó: va a la métrica roja
-                        ingredientesRechazados[ing] = (ingredientesRechazados[ing] || 0) + 1;
-                    } else {
-                        // El cliente NO lo tachó: se gastó de la bodega (métrica verde)
-                        usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
-                    }
+                p.items.forEach(item => {
+                    ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
+                    
+                    const ingredientesBase = menuGlobal[item.nombre] || [];
+                    const excluidosPorCliente = item.excluidos || [];
+
+                    ingredientesBase.forEach(ing => {
+                        if (excluidosPorCliente.includes(ing)) {
+                            ingredientesRechazados[ing] = (ingredientesRechazados[ing] || 0) + 1;
+                        } else {
+                            usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
+                        }
+                    });
                 });
-            });
+            }
+
+            if(f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear()) {
+                tMes += Number(p.total);
+            }
         }
     });
 
-    // Actualizar Ticket Promedio y Totales
-    if(document.getElementById('s-hoy')) document.getElementById('s-hoy').innerText = `$${tHoy.toLocaleString()}`;
-    if(document.getElementById('s-pedidos-total')) document.getElementById('s-pedidos-total').innerText = pedidosHoy;
-    if(document.getElementById('s-ticket-promedio')) {
-        const promedio = pedidosHoy > 0 ? tHoy / pedidosHoy : 0;
-        document.getElementById('s-ticket-promedio').innerText = `$${Math.round(promedio).toLocaleString()}`;
-    }
-
-    // Ranking de Ingredientes Gastados (Despensa)
-    if(document.getElementById('rankings-ingredientes')) {
-        document.getElementById('rankings-ingredientes').innerHTML = Object.entries(usoIngredientes)
-            .sort((a,b) => b[1] - a[1])
-            .map(([n,v]) => `<span style="background:var(--success); color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem;">${n} (${v})</span>`).join('') || "Sin datos";
-    }
-
-    // Ranking de Ingredientes Rechazados (Tachados por el cliente)
-    if(document.getElementById('rankings-rechazados')) {
-        document.getElementById('rankings-rechazados').innerHTML = Object.entries(ingredientesRechazados)
-            .sort((a,b) => b[1] - a[1])
-            .map(([n,v]) => `<span style="background:var(--danger); color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem;">${n} (${v})</span>`).join('') || "Sin rechazos";
-    }
-}
+    const ticketPromedio = pedidosHoyCount > 0 ? tHoy / pedidosHoyCount : 0;
 
     // Actualizar Interfaz
     const setUI = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
@@ -148,7 +138,7 @@ function actualizarMétricas() {
     if(document.getElementById('rankings-categoria')) {
         document.getElementById('rankings-categoria').innerHTML = Object.entries(ventasPlatos)
             .sort((a,b) => b[1] - a[1]).slice(0,5)
-            .map(([n,v]) => `<div style="padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between;"><span>${n}</span> <strong>${v}</strong></div>`).join('') || "Sin ventas";
+            .map(([n,v]) => `<div style="padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between;"><span>${n}</span> <strong>${v}</strong></div>`).join('') || "Sin ventas hoy";
     }
 
     if(document.getElementById('rankings-ingredientes')) {
