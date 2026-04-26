@@ -165,3 +165,13 @@ window.abrirCarrito = () => {
     const modal = document.getElementById('cart-modal');
     modal.classList.add('active');
 };
+// Detectar clic en el fondo oscuro para cerrar
+const modalCarrito = document.getElementById('cart-modal');
+if (modalCarrito) {
+    modalCarrito.addEventListener('click', (e) => {
+        // Si el clic fue en el fondo (el modal) y no en el contenido blanco
+        if (e.target === modalCarrito) {
+            window.cerrarCarrito();
+        }
+    });
+}
