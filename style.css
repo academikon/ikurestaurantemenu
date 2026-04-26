@@ -86,7 +86,101 @@ body { font-family: var(--font-sans); background-color: var(--bg-light); color: 
 
 .loader { text-align: center; padding: 50px; color: var(--text-muted); font-style: italic; }
 input, select, textarea { font-size: 16px !important; }
+/* =========================================
+   CARRITO RESPONSIVE (MODAL & ITEMS)
+   ========================================= */
 
+.cart-modal {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Por defecto oculto a la derecha (Desktop) */
+    width: 100%;
+    max-width: 450px;
+    height: 100vh;
+    background: var(--bg-light);
+    z-index: 1000;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.cart-modal.open {
+    right: 0;
+}
+
+/* Ajustes para móviles (Pantallas menores a 768px) */
+@media screen and (max-width: 768px) {
+    .cart-modal {
+        top: auto;
+        bottom: -100%; /* Oculto abajo */
+        right: 0;
+        height: 90vh; /* No ocupa toda la pantalla para que se vea el fondo */
+        border-radius: 25px 25px 0 0;
+        max-width: 100%;
+    }
+
+    .cart-modal.open {
+        bottom: 0;
+        right: 0;
+    }
+
+    /* Indicador visual de que se puede deslizar o cerrar */
+    .cart-header::before {
+        content: '';
+        width: 40px;
+        height: 4px;
+        background: #e2e8f0;
+        border-radius: 2px;
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .cart-header {
+        padding-top: 30px; /* Espacio para el indicador */
+    }
+
+    .cart-items-list {
+        padding: 15px; /* Más aire en los bordes */
+    }
+
+    .cart-item-row {
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Mejoras en los controles del formulario dentro del carrito */
+.order-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.whatsapp-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f0fdf4;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #dcfce7;
+    margin-bottom: 15px;
+}
+
+.whatsapp-check label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #166534;
+}
+
+/* Botón de enviar con feedback táctil */
+.btn-send-order {
+    padding: 18px; /* Más grande para pulgares */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
 @media screen and (max-width: 900px) {
     .container { flex-direction: column; }
     .hero { position: relative; height: 40vh; min-height: 250px; }
