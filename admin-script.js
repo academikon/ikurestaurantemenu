@@ -104,46 +104,101 @@ function escucharPedidos() {
 }
 
 function actualizarMétricas() {
-    let tHoy = 0, tMes = 0;
+    let tHoy = 0, tMes = 0, pedidosHoy = 0;
     let tNequi = 0, tBanco = 0, tEfectivo = 0;
+    
     const ventasPlatos = {};
-    const usoIngredientes = {};
+    const usoIngredientes = {};       // Ingredientes consumidos
+    const ingredientesRechazados = {}; // Ingredientes tachados por el cliente
+    
     const hoy = new Date();
 
     pedidosGlobales.forEach(p => {
         if(p.timestamp) {
             const f = p.timestamp.toDate();
-            if(f.getDate() === hoy.getDate() && f.getMonth() === hoy.getMonth()) {
+            const esHoy = f.getDate() === hoy.getDate() && 
+                          f.getMonth() === hoy.getMonth() && 
+                          f.getFullYear() === hoy.getFullYear();
+
+            // Análisis diario
+            if(esHoy) {
                 tHoy += Number(p.total);
+                pedidosHoy++;
+                
                 if(p.metodoPago === 'nequi') tNequi += Number(p.total);
                 if(p.metodoPago === 'banco') tBanco += Number(p.total);
                 if(p.metodoPago === 'efectivo') tEfectivo += Number(p.total);
-            }
-            if(f.getMonth() === hoy.getMonth()) tMes += Number(p.total);
-        }
 
-        p.items.forEach(item => {
-            ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
-            const ingrs = menuGlobal[item.nombre] || [];
-            ingrs.forEach(ing => {
-                usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
-            });
-        });
+                p.items.forEach(item => {
+                    // Contar plato vendido
+                    ventasPlatos[item.nombre] = (ventasPlatos[item.nombre] || 0) + 1;
+                    
+                    // Lógica inteligente de ingredientes
+                    const ingredientesBase = menuGlobal[item.nombre] || [];
+                    const excluidosPorCliente = item.excluidos || [];
+
+                    ingredientesBase.forEach(ing => {
+                        if (excluidosPorCliente.includes(ing)) {
+                            // Sumar a la lista de "No me gusta"
+                            ingredientesRechazados[ing] = (ingredientesRechazados[ing] || 0) + 1;
+                        } else {
+                            // Sumar a la rotación real de la cocina
+                            usoIngredientes[ing] = (usoIngredientes[ing] || 0) + 1;
+                        }
+                    });
+                });
+            }
+
+            // Análisis mensual
+            if(f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear()) {
+                tMes += Number(p.total);
+            }
+        }
     });
 
-    if(document.getElementById('s-hoy')) document.getElementById('s-hoy').innerText = `$${tHoy.toLocaleString()}`;
-    if(document.getElementById('s-mes')) document.getElementById('s-mes').innerText = `$${tMes.toLocaleString()}`;
-    if(document.getElementById('s-nequi')) document.getElementById('s-nequi').innerText = `$${tNequi.toLocaleString()}`;
-    if(document.getElementById('s-bancolombia')) document.getElementById('s-bancolombia').innerText = `$${tBanco.toLocaleString()}`;
-    if(document.getElementById('s-efectivo')) document.getElementById('s-efectivo').innerText = `$${tEfectivo.toLocaleString()}`;
+    const ticketPromedio = pedidosHoy > 0 ? tHoy / pedidosHoy : 0;
 
-    if(document.getElementById('rankings-categoria')) {
-        document.getElementById('rankings-categoria').innerHTML = Object.entries(ventasPlatos)
+    // --- ACTUALIZACIÓN DE INTERFAZ ---
+
+    // Valores numéricos
+    const safeSetText = (id, text) => { if(document.getElementById(id)) document.getElementById(id).innerText = text; };
+    
+    safeSetText('s-hoy', `$${tHoy.toLocaleString()}`);
+    safeSetText('s-mes', `$${tMes.toLocaleString()}`);
+    safeSetText('s-pedidos-total', pedidosHoy);
+    safeSetText('s-ticket-promedio', `$${Math.round(ticketPromedio).toLocaleString()}`);
+    safeSetText('s-nequi', `$${tNequi.toLocaleString()}`);
+    safeSetText('s-bancolombia', `$${tBanco.toLocaleString()}`);
+    safeSetText('s-efectivo', `$${tEfectivo.toLocaleString()}`);
+
+    // Rankings de Platos
+    const rankPlatos = document.getElementById('rankings-categoria');
+    if(rankPlatos) {
+        rankPlatos.innerHTML = Object.entries(ventasPlatos)
             .sort((a,b) => b[1] - a[1]).slice(0,5)
-            .map(([n,v]) => `<div style="padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between;"><span>${n}</span> <strong>${v}</strong></div>`).join('');
+            .map(([n,v]) => `
+                <div style="padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.9rem;">${n}</span>
+                    <strong style="color:var(--sidebar);">${v}</strong>
+                </div>`).join('') || "Sin ventas hoy";
+    }
+
+    // Rankings de Despensa (Usados ✅)
+    const rankIng = document.getElementById('rankings-ingredientes');
+    if(rankIng) {
+        rankIng.innerHTML = Object.entries(usoIngredientes)
+            .sort((a,b) => b[1] - a[1])
+            .map(([n,v]) => `<span style="background:var(--success); color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem;">${n} (${v})</span>`).join('') || "Sin datos";
+    }
+
+    // Rankings de Rechazados (Quitados ❌)
+    const rankRech = document.getElementById('rankings-rechazados');
+    if(rankRech) {
+        rankRech.innerHTML = Object.entries(ingredientesRechazados)
+            .sort((a,b) => b[1] - a[1])
+            .map(([n,v]) => `<span style="background:var(--danger); color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem;">${n} (${v})</span>`).join('') || "Sin ingredientes rechazados";
     }
 }
-
 // --- FUNCIONES DE ESTADO ---
 window.actualizarEstado = async (id, estado) => await updateDoc(doc(db, "pedidos", id), { estado });
 window.cerrarPedido = async (id, metodoPago) => await updateDoc(doc(db, "pedidos", id), { estado: 'listo', metodoPago: metodoPago });
