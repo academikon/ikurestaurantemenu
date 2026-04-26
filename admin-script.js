@@ -119,7 +119,18 @@ function actualizarMétricas() {
     });
             }
         }
-        
+        // Actualizamos los títulos de las tarjetas según el filtro
+    const labelPeriodo = filtro === 'hoy' ? '(Hoy)' : filtro === 'semana' ? '(7d)' : filtro === 'mes' ? '(Mes)' : '(Total)';
+    
+    // Renderizado (Usamos los mismos IDs pero ahora son dinámicos)
+    const setUI = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
+    setUI('s-hoy', `$${tHoy.toLocaleString()}`);
+    setUI('s-pedidos-total', pedidosContados);
+    setUI('s-nequi', `$${tNequi.toLocaleString()}`);
+    setUI('s-bancolombia', `$${tBanco.toLocaleString()}`);
+    setUI('s-efectivo', `$${tEfectivo.toLocaleString()}`);
+    
+    //
         // Venta mensual (solo pedidos no rechazados)
         if(f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear() && p.estado !== 'rechazado') {
             tMes += Number(p.total);
