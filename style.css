@@ -5,7 +5,7 @@
     --bg-light: #f8fafc;
     --success: #22c55e;
     --danger: #ef4444;
-    --text-muted: #64748b;
+    --text-muted: #94a3b8;
     --font-serif: 'Playfair Display', serif;
     --font-sans: 'Poppins', sans-serif;
 }
@@ -14,7 +14,6 @@
 
 body { font-family: var(--font-sans); background-color: var(--primary); color: var(--white); }
 
-.menu-content { flex: 2; padding: 40px; background-color: var(--primary); min-height: 100vh; }
 .container { display: flex; flex-direction: row; min-height: 100vh; }
 
 .hero { 
@@ -26,7 +25,8 @@ body { font-family: var(--font-sans); background-color: var(--primary); color: v
 .brand-sub { letter-spacing: 6px; font-weight: 700; color: var(--accent); text-transform: uppercase; font-size: 0.9rem; }
 .overline { text-transform: uppercase; font-size: 0.8rem; letter-spacing: 3px; opacity: 0.8; }
 
-.menu-content { flex: 2; padding: 40px; background-color: var(--white); min-height: 100vh; }
+/* Eliminamos el .menu-content duplicado, solo queda este con fondo oscuro */
+.menu-content { flex: 2; padding: 40px; background-color: var(--primary); min-height: 100vh; }
 
 .tabs { display: flex; gap: 12px; margin-bottom: 30px; position: sticky; top: 0; background: rgba(15, 17, 21, 0.85); backdrop-filter: blur(12px); padding: 20px 0; z-index: 10; justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
 .tab-btn { background: #16181d; border: 1px solid rgba(255,255,255,0.05); font-weight: 600; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; padding: 10px 20px; border-radius: 40px; transition: 0.3s; white-space: nowrap; }
@@ -38,25 +38,26 @@ body { font-family: var(--font-sans); background-color: var(--primary); color: v
 .dish-price { color: var(--success); font-weight: 700; font-size: 1.1rem; }
 
 .expand-content { max-height: 0; opacity: 0; overflow: hidden; transition: 0.4s ease; }
-.dish-item.expanded .expand-content { max-height: 600px; opacity: 1; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee; }
+.dish-item.expanded .expand-content { max-height: 600px; opacity: 1; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); }
 
 .ing-container { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
 .ing-pill { background: #1f222a; color: #94a3b8; font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid #334155; text-transform: uppercase; cursor: pointer; transition: 0.2s; user-select: none; }
 .ing-pill.excluido { background: rgba(239, 68, 68, 0.1); color: var(--danger); text-decoration: line-through; border-color: rgba(239, 68, 68, 0.3); }
-.ing-pill.excluido { background: #fee2e2; color: #ef4444; text-decoration: line-through; border-color: #fca5a5; }
 
 .qty-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #1f222a; padding: 10px 15px; border-radius: 12px; border: 1px solid #334155; }
 .qty-label { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; }
 .qty-control { display: flex; align-items: center; gap: 15px; }
-.btn-qty { background: #0f1115; border: 1px solid #334155; width: 32px; height: 32px; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; color: var(--white); transition: 0.2s; display: flex; justify-content: center; align-items: center; }.btn-qty:active { transform: scale(0.9); }
+.btn-qty { background: #0f1115; border: 1px solid #334155; width: 32px; height: 32px; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; color: var(--white); transition: 0.2s; display: flex; justify-content: center; align-items: center; }
+.btn-qty:active { transform: scale(0.9); }
 .qty-num { font-weight: 700; font-size: 1.1rem; min-width: 20px; text-align: center; }
 
-.btn-add-cart { width: 100%; background: var(--primary); color: var(--accent); padding: 14px; border: none; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+/* Botón de añadir al carrito adaptado a colores oscuros */
+.btn-add-cart { width: 100%; background: var(--accent); color: var(--primary); padding: 14px; border: none; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
 .btn-add-cart:active { transform: scale(0.98); }
 
 .cart-fab { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: var(--primary); width: 64px; height: 64px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 25px rgba(255, 204, 0, 0.4); cursor: pointer; z-index: 50; transition: 0.3s; }
 .cart-fab:hover { transform: translateY(-3px); }
-#cart-count { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; width: 24px; height: 24px; border-radius: 50%; font-size: 0.8rem; font-weight: bold; display: flex; justify-content: center; align-items: center; border: 2px solid white; }
+#cart-count { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; width: 24px; height: 24px; border-radius: 50%; font-size: 0.8rem; font-weight: bold; display: flex; justify-content: center; align-items: center; border: 2px solid var(--primary); }
 
 @keyframes bounceCart {
     0%, 100% { transform: scale(1); }
@@ -64,58 +65,38 @@ body { font-family: var(--font-sans); background-color: var(--primary); color: v
 }
 .cart-bounce { animation: bounceCart 0.3s ease; }
 
-.cart-modal { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100vh; background: var(--bg-light); z-index: 1000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: -10px 0 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+/* =========================================
+   CARRITO RESPONSIVE (MODAL & ITEMS) - AHORA EN MODO OSCURO
+   ========================================= */
+.cart-modal { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100vh; background: var(--primary); z-index: 1000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: -10px 0 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; color: var(--white); }
 .cart-modal.open { right: 0; }
 
-.cart-header { padding: 25px; background: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-.cart-header h3 { font-size: 1.3rem; font-weight: 700; }
+.cart-header { padding: 25px; background: #16181d; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.cart-header h3 { font-size: 1.3rem; font-weight: 700; color: var(--white);}
 .close-cart { background: none; border: none; cursor: pointer; color: var(--text-muted); }
 
 .cart-items-list { flex: 1; overflow-y: auto; padding: 25px; -webkit-overflow-scrolling: touch; }
-.cart-item-row { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.cart-item-row { background: #1f222a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
 
-.btn-remove-item { background: #fee2e2; color: var(--danger); border: none; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; }
+.btn-remove-item { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; }
 
-.cart-footer { padding: 25px; background: white; border-top: 1px solid #eee; }
-.total-row { display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700; margin-bottom: 20px; }
+.cart-footer { padding: 25px; background: #16181d; border-top: 1px solid rgba(255,255,255,0.05); }
+.total-row { display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700; margin-bottom: 20px; color: var(--white); }
 #cart-total-price { color: var(--success); }
 
-.order-form input, .order-form select { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 12px; font-family: inherit; background: #f8fafc; }
-.btn-send-order { width: 100%; background: var(--primary); color: var(--accent); padding: 16px; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+.order-form input, .order-form select { width: 100%; padding: 14px; border: 1px solid #334155; border-radius: 10px; margin-bottom: 12px; font-family: inherit; background: #1f222a; color: var(--white); }
+.btn-send-order { width: 100%; background: var(--accent); color: var(--primary); padding: 16px; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.3s; margin-top: 10px; }
 .btn-send-order:active { transform: scale(0.98); }
 
 .loader { text-align: center; padding: 50px; color: var(--text-muted); font-style: italic; }
 input, select, textarea { font-size: 16px !important; }
-/* =========================================
-   CARRITO RESPONSIVE (MODAL & ITEMS)
-   ========================================= */
 
-.cart-modal {
-    position: fixed;
-    top: 0;
-    right: -100%; /* Por defecto oculto a la derecha (Desktop) */
-    width: 100%;
-    max-width: 450px;
-    height: 100vh;
-    background: var(--bg-light);
-    z-index: 1000;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: -10px 0 30px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-}
-
-.cart-modal.open {
-    right: 0;
-}
-
-/* Ajustes para móviles (Pantallas menores a 768px) */
 @media screen and (max-width: 768px) {
     .cart-modal {
         top: auto;
-        bottom: -100%; /* Oculto abajo */
+        bottom: -100%; 
         right: 0;
-        height: 90vh; /* No ocupa toda la pantalla para que se vea el fondo */
+        height: 90vh; 
         border-radius: 25px 25px 0 0;
         max-width: 100%;
     }
@@ -125,12 +106,11 @@ input, select, textarea { font-size: 16px !important; }
         right: 0;
     }
 
-    /* Indicador visual de que se puede deslizar o cerrar */
     .cart-header::before {
         content: '';
         width: 40px;
         height: 4px;
-        background: #e2e8f0;
+        background: #334155;
         border-radius: 2px;
         position: absolute;
         top: 10px;
@@ -138,49 +118,18 @@ input, select, textarea { font-size: 16px !important; }
         transform: translateX(-50%);
     }
 
-    .cart-header {
-        padding-top: 30px; /* Espacio para el indicador */
-    }
-
-    .cart-items-list {
-        padding: 15px; /* Más aire en los bordes */
-    }
-
-    .cart-item-row {
-        padding: 12px;
-        font-size: 0.95rem;
-    }
+    .cart-header { padding-top: 30px; }
+    .cart-items-list { padding: 15px; }
+    .cart-item-row { padding: 12px; font-size: 0.95rem; }
 }
 
-/* Mejoras en los controles del formulario dentro del carrito */
-.order-form {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-}
+.order-form { display: grid; grid-template-columns: 1fr; gap: 8px; }
 
-.whatsapp-check {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #f0fdf4;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #dcfce7;
-    margin-bottom: 15px;
-}
+.whatsapp-check { display: flex; align-items: center; gap: 10px; background: rgba(34, 197, 94, 0.1); padding: 12px; border-radius: 10px; border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 15px; }
+.whatsapp-check label { font-size: 0.85rem; font-weight: 600; color: var(--success); }
 
-.whatsapp-check label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #166534;
-}
+.btn-send-order { padding: 18px; box-shadow: 0 4px 12px rgba(255, 204, 0, 0.15); }
 
-/* Botón de enviar con feedback táctil */
-.btn-send-order {
-    padding: 18px; /* Más grande para pulgares */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
 @media screen and (max-width: 900px) {
     .container { flex-direction: column; }
     .hero { position: relative; height: 40vh; min-height: 250px; }
@@ -189,44 +138,22 @@ input, select, textarea { font-size: 16px !important; }
     .tabs { flex-wrap: wrap; padding: 10px 0; border-radius: 20px; }
     .tab-btn { flex: 1; text-align: center; min-width: 31%; padding: 10px 2px; font-size: 0.72rem; white-space: nowrap; }
 }
-/* --- FOOTER ULTRA COMPACTO Y MINIMALISTA --- */
-/* Reemplaza todo el bloque de estilos del footer anterior con esto */
 
+/* --- FOOTER ULTRA COMPACTO Y MINIMALISTA --- */
 .compact-footer { margin-top: 30px; padding: 20px 0; border-top: 1px dashed rgba(255,255,255,0.1); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; font-family: var(--font-sans); }
 
 .compact-ig-link { display: flex; align-items: center; gap: 6px; color: var(--white); text-decoration: none; font-weight: 400; font-size: 0.75rem; transition: 0.2s; }
 .compact-ig-link svg { opacity: 0.7; color: var(--white); }
 
-/* Efecto hover elegante: solo cambia color al accent amarillo */
-.compact-ig-link:hover {
-    color: var(--accent);
-    transform: translateY(-1px);
-}
+.compact-ig-link:hover { color: var(--accent); transform: translateY(-1px); }
+.compact-ig-link:hover svg { opacity: 1; color: var(--accent); }
 
-.compact-ig-link:hover svg {
-    opacity: 1;
-    color: var(--accent);
-}
+.sarlab-compact { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 1px; }
+.sarlab-compact p { margin: 0; }
 
-.sarlab-compact {
-    font-size: 0.65rem; /* Letra ultra pequeña */
-    color: var(--text-muted);
-    letter-spacing: 1px;
-    /*text-transform: uppercase;*/
-}
+/* El texto de SARLAB ahora resalta en blanco para no perderse en el fondo oscuro */
+.sarlab-compact strong { color: var(--white); font-weight: 700; }
 
-.sarlab-compact p {
-    margin: 0;
-}
-
-.sarlab-compact strong {
-    color: var(--primary);
-    font-weight: 700;
-}
-
-/* Ajuste móvil sutil para carrito */
 @media screen and (max-width: 768px) {
-    .compact-footer {
-        margin-bottom: 70px; /* Espacio sutil inferior */
-    }
+    .compact-footer { margin-bottom: 70px; }
 }
