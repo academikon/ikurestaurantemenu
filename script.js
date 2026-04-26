@@ -4,7 +4,6 @@ import { collection, addDoc, onSnapshot, doc, query, orderBy, serverTimestamp } 
 let carrito = [];
 const ICON_TRASH = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
-// Mejor método de sonido para forzar a móviles a cargarlo
 const SOUND_ADD = document.createElement('audio');
 SOUND_ADD.src = 'https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-up-alert-2358.mp3';
 SOUND_ADD.preload = 'auto';
@@ -25,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+// --- INTERFAZ ---
 window.toggleDish = (header) => {
     const dish = header.parentElement;
     const isOpened = dish.classList.contains('expanded');
@@ -43,10 +43,10 @@ window.ajustarCant = (id, delta) => {
     el.innerText = cant;
 };
 
+// --- LÓGICA DE CARRITO ---
 window.agregarAlCarrito = (nombre, precio, id) => {
     const qtySpan = document.getElementById(`cant-${id}`);
     const cantidad = qtySpan ? parseInt(qtySpan.innerText) : 1;
-    
     const excluidos = Array.from(document.querySelectorAll(`#dish-${id} .ing-pill.excluido`)).map(el => el.innerText);
     
     const existeIndex = carrito.findIndex(i => i.nombre === nombre && JSON.stringify(i.excluidos) === JSON.stringify(excluidos));
@@ -54,16 +54,14 @@ window.agregarAlCarrito = (nombre, precio, id) => {
     if(existeIndex !== -1) {
         carrito[existeIndex].cantidad += cantidad; 
     } else {
-        // Ya NO guardamos la variable 'nota'
         carrito.push({ nombre, precio: Number(precio), cantidad: cantidad, id, excluidos });
     }
     
     if(qtySpan) qtySpan.innerText = "1"; 
-    
     document.querySelectorAll(`#dish-${id} .ing-pill.excluido`).forEach(el => el.classList.remove('excluido'));
     
     SOUND_ADD.currentTime = 0;
-    SOUND_ADD.play().catch(e => console.log('Sonido bloqueado por el navegador (o celular en silencio)'));
+    SOUND_ADD.play().catch(e => console.log('Audio error'));
 
     const cartFab = document.querySelector('.cart-fab');
     if (cartFab) {
@@ -89,12 +87,10 @@ function actualizarCarrito() {
     
     carrito.forEach((item, i) => {
         total += (item.precio * item.cantidad);
-        
         const excluidosStr = item.excluidos && item.excluidos.length > 0 
             ? `<div style="color:#ef4444; font-size:0.75rem; font-weight:600; margin-top:4px;">❌ Sin: ${item.excluidos.join(', ')}</div>` 
             : '';
 
-        // Se eliminó el textarea (cuadro de nota)
         cont.innerHTML += `
         <div class="cart-item-row">
             <div>
@@ -103,7 +99,7 @@ function actualizarCarrito() {
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <span style="color:#22c55e; font-weight:700;">$${(item.precio * item.cantidad).toLocaleString()}</span>
-                <button onclick="quitar(${i})" class="btn-remove-item" title="Eliminar plato">${ICON_TRASH}</button>
+                <button onclick="quitar(${i})" class="btn-remove-item">${ICON_TRASH}</button>
             </div>
         </div>`;
     });
@@ -112,6 +108,7 @@ function actualizarCarrito() {
 
 window.quitar = (i) => { carrito.splice(i, 1); actualizarCarrito(); };
 
+// --- ENVÍO DE PEDIDO ---
 window.enviarPedido = async () => {
     const cliente = document.getElementById('nombre-cliente')?.value;
     const tipo = document.getElementById('tipo-servicio')?.value;
@@ -126,11 +123,9 @@ window.enviarPedido = async () => {
     }
 
     const total = carrito.reduce((s, x) => s + (x.precio * x.cantidad), 0);
-    
     let itemsParaEnviar = [];
     carrito.forEach(item => {
         for(let k = 0; k < item.cantidad; k++) {
-            // Ya no enviamos variable 'nota' a la base de datos
             itemsParaEnviar.push({
                 nombre: item.nombre,
                 precio: item.precio,
@@ -142,12 +137,7 @@ window.enviarPedido = async () => {
     try {
         btn.innerHTML = "Enviando... ⏳";
         const docRef = await addDoc(collection(db, "pedidos"), { 
-            cliente, 
-            tipo, 
-            items: itemsParaEnviar, 
-            total, 
-            estado: "pendiente", 
-            timestamp: serverTimestamp() 
+            cliente, tipo, items: itemsParaEnviar, total, estado: "pendiente", timestamp: serverTimestamp() 
         });
         
         if (quiereWA) {
@@ -162,9 +152,7 @@ window.enviarPedido = async () => {
             btn.innerHTML = textoOriginal;
             iniciarTracker(docRef.id);
         }, 1500);
-    } catch (e) { 
-        btn.innerHTML = "Error ❌"; 
-    }
+    } catch (e) { btn.innerHTML = "Error ❌"; }
 };
 
 window.iniciarTracker = (id) => {
@@ -177,29 +165,22 @@ window.iniciarTracker = (id) => {
             const icn = document.getElementById('tracker-icon');
             if(p.estado === 'preparando') {
                 tit.innerText = "Preparando";
-                desc.innerText = "¡Tu pedido ya está en la cocina y lo estamos preparando!";
+                desc.innerText = "¡Tu pedido ya está en la cocina!";
                 icn.innerText = "🍳";
-                icn.style.animation = "shakeCart 1s infinite alternate";
             } else if (p.estado === 'listo') {
                 tit.innerText = "¡Pedido Listo!";
                 desc.innerText = "Tu pedido está listo para ser entregado.";
                 icn.innerText = "✅";
-                icn.style.animation = "none";
                 setTimeout(() => window.cerrarTracker(), 5000);
             }
         }
     });
 };
 
-const sDiario = document.getElementById('diario');
-const sRapida = document.getElementById('rapida');
-const sVarios = document.getElementById('varios');
-
+// --- CARGA DINÁMICA DEL MENÚ ---
 onSnapshot(query(collection(db, "platos"), orderBy("nombre", "asc")), (snap) => {
-    // Definimos todos los IDs de las secciones
     const categoriasIds = ['diario', 'desayuno', 'especial', 'asado', 'rapida', 'bebida'];
     
-    // Limpiamos todas las secciones antes de recargar
     categoriasIds.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.innerHTML = '';
@@ -209,27 +190,19 @@ onSnapshot(query(collection(db, "platos"), orderBy("nombre", "asc")), (snap) => 
 
     snap.forEach(docSnap => {
         const d = docSnap.data();
-        // ... (aquí va tu código actual que genera la variable 'html') ...
-        
-        // Insertamos el plato en su sección correspondiente según d.categoria
-        const container = document.getElementById(d.categoria);
-        if(container) container.innerHTML += html;
-    });
-});
+        if(d.disponible === false) return; // No mostrar si no hay disponibilidad
 
         let ingredientesHTML = '';
         if (d.ingredientes && d.ingredientes.length > 0) {
-            // MOVIDO: Ahora los ingredientes están estructurados para ir dentro del menú desplegable
             ingredientesHTML = `
             <div style="margin-bottom: 16px; padding-top: 10px; border-top: 1px dashed #eee;">
-                <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px; font-weight:600;">Ingredientes <span style="font-weight:400;">(Toca para quitarlos de tu plato)</span>:</div>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px; font-weight:600;">Ingredientes <span style="font-weight:400;">(Toca para quitar)</span>:</div>
                 <div class="ing-container" style="margin: 0;">
-                    ${d.ingredientes.map(i => `<span class="ing-pill" onclick="event.stopPropagation(); this.classList.toggle('excluido')" title="Toca para quitar">${i}</span>`).join('')}
+                    ${d.ingredientes.map(i => `<span class="ing-pill" onclick="event.stopPropagation(); this.classList.toggle('excluido')">${i}</span>`).join('')}
                 </div>
             </div>`;
         }
 
-        // Estructura actualizada: Ingredientes pasan a estar DENTRO de expand-content
         const html = `
         <div class="dish-item" id="dish-${docSnap.id}">
             <div class="dish-header" onclick="toggleDish(this)">
@@ -253,12 +226,12 @@ onSnapshot(query(collection(db, "platos"), orderBy("nombre", "asc")), (snap) => 
             </div>
         </div>`;
         
-        if (d.categoria === 'diario') sDiario.innerHTML += html;
-        else if (d.categoria === 'rapida') sRapida.innerHTML += html;
-        else if (d.categoria === 'varios') sVarios.innerHTML += html;
+        const container = document.getElementById(d.categoria);
+        if(container) container.innerHTML += html;
     });
 });
 
+// --- CAMBIO DE TABS ---
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
