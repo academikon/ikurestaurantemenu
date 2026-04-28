@@ -147,3 +147,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent-yellow); 
 
 
 
+.bento-grid-pedidos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    align-items: start; /* CRÍTICO: Mantiene las tarjetas compactas */
+}
+
+.card-bento {
+    background: var(--card-dark);
+    border-radius: 24px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    height: auto; 
+    display: flex;
+    flex-direction: column;
+}
