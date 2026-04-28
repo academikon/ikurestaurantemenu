@@ -288,3 +288,4 @@ window.imprimirComanda = (ps) => {
     div.innerHTML = `<div id="ticket-impresion"><h2 style="text-align:center;">IKU</h2><hr><p><strong>Cliente:</strong> ${p.cliente}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p><hr><ul style="list-style:none; padding:0;">${p.items.map(i => `<li><strong style="font-size:1.1rem;">1x ${i.nombre}</strong> ${i.excluidos?.length > 0 ? `<br><small style="color:red; font-weight:bold;">- Sin: ${i.excluidos.join(', ')}</small>` : ''}</li>`).join('')}</ul><hr><h3 style="text-align:right;">Total: $${Number(p.total).toLocaleString()}</h3></div>`;
     document.body.appendChild(div); window.print(); document.body.removeChild(div);
 };
+
