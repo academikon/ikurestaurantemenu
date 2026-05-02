@@ -12,7 +12,7 @@ let categoriasAbiertas = new Set();
 let menuGlobal = {}, pedidosGlobales = [], insumosGlobales = [], idParaEliminar = null;
 
 const CORREO_MASTER = "cb01grupo@gmail.com";
-const correosAutorizados = [CORREO_MASTER, "kelly.araujotafur@gmail.com"];
+const correosAutorizados = [CORREO_MASTER, "kelly.araujotafur@gmail.com", "jesusmanuelcd10@gmail.com"];
 const ICON_PREPARE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`;
 const ICON_X = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 const ICON_EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
@@ -166,56 +166,125 @@ window.irAPedido = (id) => {
 // --- 3. BODEGA, INVENTARIO Y KARDEX ---
 function escucharInventario() {
     onSnapshot(collection(db, "inventario"), (snap) => {
-        const lista = document.getElementById('lista-insumos');
-        if (!lista) return;
-
-        // 1. EL FIX MÁGICO: Evita que el contenedor estire las tarjetas
-        lista.style.alignItems = 'start';
-        lista.style.gap = '16px'; 
-
-        insumosGlobales = [];
-        let htmlLista = '';
+        // Actualizamos la lista global
+        insumosGlobales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         
-        snap.forEach(docSnap => {
-            const i = docSnap.data(); i.id = docSnap.id; insumosGlobales.push(i);
-            const esCritico = Number(i.stockActual) <= Number(i.umbralMinimo);
-            const colorCard = esCritico ? '#ef4444' : 'var(--border)';
-
-            // 2. DISEÑO CORREGIDO: Forzamos el fondo oscuro y la altura máxima
-            htmlLista += `
-                <div style="border: 1px solid ${colorCard}; background: var(--sidebar, #1e293b); border-radius: 16px; position: relative; padding: 20px; height: max-content; width: 100%; box-sizing: border-box;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
-                        <span style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">
-                            ${i.unidad} ${i.factor ? `(F: ${i.factor})` : ''}
-                        </span>
-                        <div style="display:flex; gap:12px;">
-                            <button onclick="verHistorialInsumo('${i.id}', '${i.nombre}')" style="background:none; border:none; color:var(--accent-yellow); cursor:pointer;">🕒</button>
-                            <button onclick="eliminarInsumoModal('${i.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer;">${ICON_TRASH}</button>
-                        </div>
-                    </div>
-                    <div onclick="editarInsumo('${i.id}', '${encodeURIComponent(i.nombre)}', ${i.stockActual}, '${i.unidad}', ${i.umbralMinimo}, ${i.costoUnitario}, ${i.factor || 1})" style="cursor:pointer;">
-                        <strong style="font-size: 1.1rem; display: block; color: #ffffff;">${i.nombre}</strong>
-                        <div style="font-size: 1.8rem; font-weight: 800; color: ${esCritico ? '#ef4444' : '#ffffff'}; margin: 5px 0;">
-                            ${Number(i.stockActual).toLocaleString()}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #94a3b8;">
-                            Costo Prom: $${Number(i.costoUnitario || 0).toFixed(2)}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
+        // Renderizamos ambas vistas
+        renderListaInsumosBento(); // La de las tarjetas (Configuración)
+        renderInventarioTable();   // La del Dashboard (Operación)
         
-        lista.innerHTML = htmlLista || '<p style="color:var(--text-muted);">Sin insumos.</p>';
         actualizarSelectoresInsumos();
     });
 }
+window.renderListaInsumosBento = () => {
+    const contenedor = document.getElementById('lista-insumos');
+    if (!contenedor) return;
+    
+    let html = '';
+    insumosGlobales.forEach(i => {
+        // Verificamos si el stock es menor o igual al mínimo para poner la tarjeta en rojo
+        const esBajo = Number(i.stockActual) <= Number(i.umbralMinimo);
+        
+        html += `
+            <div class="card-bento ${esBajo ? 'card-danger' : ''}" 
+                 onclick="editarInsumo('${i.id}', '${encodeURIComponent(i.nombre)}', ${i.stockActual}, '${i.unidad}', ${i.umbralMinimo}, ${i.costoUnitario}, ${i.factor})"
+                 style="cursor: pointer;">
+                <div class="card-label">${i.nombre}</div>
+                <div class="big-number-small">
+                    ${i.stockActual} 
+                    <span style="font-size: 0.9rem; opacity: 0.6;">${i.unidad === 'gramos' ? 'g' : i.unidad === 'ml' ? 'ml' : 'und'}</span>
+                </div>
+                <div class="card-sub">Alerta: ${i.umbralMinimo}</div>
+            </div>`;
+    });
+    
+    contenedor.innerHTML = html || '<p style="color:var(--text-muted); padding: 20px;">No hay insumos creados aún.</p>';
+};
+// ESTA FUNCIÓN VA AFUERA, SOLA:
+window.renderInventarioTable = () => {
+    const tbody = document.getElementById('tabla-inventario-dinamica');
+    if (!tbody) return;
 
+    const busqueda = document.getElementById('busqueda-inventario')?.value.toLowerCase() || "";
+    
+    let html = '';
+    insumosGlobales.forEach(insumo => {
+        if (busqueda && !insumo.nombre.toLowerCase().includes(busqueda)) return;
+
+        const esBajoStock = Number(insumo.stockActual) <= Number(insumo.umbralMinimo);
+        
+        const statusBadge = esBajoStock 
+            ? `<span style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.2);">STOCK BAJO</span>`
+            : `<span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; border: 1px solid rgba(34, 197, 94, 0.2);">SALUDABLE</span>`;
+
+        html += `
+            <tr class="row-hover" style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 16px 20px;">
+                    <div style="font-weight: 600; color: var(--white);">${insumo.nombre}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace;">SKU-${insumo.id.substring(0,6).toUpperCase()}</div>
+                </td>
+                <td style="padding: 16px 20px; color: var(--text-muted); text-transform: capitalize;">${insumo.unidad}</td>
+                <td style="padding: 16px 20px; text-align: center;">
+                    <input type="number" 
+                        value="${insumo.stockActual}" 
+                        onchange="actualizarStockFisico('${insumo.id}', this.value, ${insumo.stockActual}, '${insumo.nombre}')"
+                        style="background: #0f1115; border: 1px solid var(--border); color: var(--accent-yellow); text-align: center; width: 75px; padding: 5px; border-radius: 8px; font-weight: 800; margin-bottom: 0;">
+                </td>
+                <td style="padding: 16px 20px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                    ${insumo.unidad === 'gramos' ? 'Grs' : insumo.unidad === 'ml' ? 'Ml' : 'Und'}
+                </td>
+                <td style="padding: 16px 20px; color: var(--white); font-weight: 500;">
+                    $${Math.round(insumo.costoUnitario || 0).toLocaleString()}
+                </td>
+                <td style="padding: 16px 20px; text-align: center;">${statusBadge}</td>
+                <td style="padding: 16px 20px; text-align: right;">
+                    <button onclick="verHistorialInsumo('${insumo.id}', '${insumo.nombre}')" style="background: none; border: none; color: var(--accent-yellow); cursor: pointer; font-size: 1.1rem; opacity: 0.6; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">🕒</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">No se encontraron insumos.</td></tr>';
+};
+
+// --- SISTEMA DE NOTIFICACIONES ELEGANTE (INYECCIÓN AUTOMÁTICA) ---
+// Crea el contenedor de alertas mágicamente sin tocar el HTML
+if (!document.getElementById('iku-toast-container')) {
+    const toastContainer = document.createElement('div');
+    toastContainer.id = 'iku-toast-container';
+    toastContainer.style = "position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;";
+    document.body.appendChild(toastContainer);
+}
+
+window.mostrarNotificacion = (mensaje, tipo = 'success') => {
+    const container = document.getElementById('iku-toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    const color = tipo === 'success' ? '#10b981' : '#ef4444'; 
+    const icono = tipo === 'success' ? '✅' : '❌';
+    
+    toast.style = `background: var(--card-dark, #1e293b); border-left: 4px solid ${color}; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 12px; transform: translateX(100%); transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0;`;
+    toast.innerHTML = `<span style="font-size: 1.2rem;">${icono}</span> <span>${mensaje}</span>`;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; }, 10);
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)'; toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
+
+// --- FORMULARIO CREACIÓN DE INSUMOS ---
 const formInv = document.getElementById('inv-form');
 if(formInv) {
     formInv.onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('inv-id').value;
+        const btn = formInv.querySelector('button[type="submit"]');
+        const txtAnterior = btn.innerText;
+        btn.innerText = "Guardando..."; btn.disabled = true;
+
         const datos = {
             nombre: document.getElementById('inv-name').value,
             stockActual: Number(document.getElementById('inv-stock').value || 0),
@@ -227,22 +296,77 @@ if(formInv) {
         };
         try {
             id ? await updateDoc(doc(db, "inventario", id), datos) : await addDoc(collection(db, "inventario"), datos);
+            
+            // NOTIFICACIÓN ELEGANTE EN VEZ DEL ALERT FEO
+            mostrarNotificacion(id ? "Insumo actualizado correctamente." : "Nuevo insumo guardado.", "success");
             window.cancelarEdicionInv();
-        } catch (error) { console.error("Error en inventario:", error); }
+        } catch (error) { 
+            console.error(error); 
+            mostrarNotificacion("Hubo un error al guardar.", "error");
+        } finally {
+            btn.innerText = txtAnterior; btn.disabled = false;
+        }
     };
 }
 
+// --- COMPRAS Y AUTO-CÁLCULO DE COSTO INTELIGENTE ---
 const formCompra = document.getElementById('f-compra');
+const inputCantCompra = document.getElementById('compra-cant');
+const selectInsumoCompra = document.getElementById('compra-insumo');
+const inputCostoCompra = document.getElementById('compra-costo');
+
+window.calcularCostoCompra = () => {
+    if (!inputCantCompra || !selectInsumoCompra || !inputCostoCompra) return;
+    const insumo = insumosGlobales.find(i => i.id === selectInsumoCompra.value);
+    const cant = Number(inputCantCompra.value);
+    
+    if (insumo && cant > 0) {
+        let costoGuardado = Number(insumo.costoUnitario) || 0;
+        let factor = Number(insumo.factor) || 1;
+        
+        let costoPorEmpaque;
+        // MAGIA: Si el costo guardado es muy alto (ej. 20000), el sistema sabe que es el precio 
+        // del empaque completo. Si es bajito (ej. 40), sabe que es el precio por gramo.
+        if (costoGuardado > 500 && factor > 1) {
+            costoPorEmpaque = costoGuardado; 
+        } else {
+            costoPorEmpaque = costoGuardado * factor;
+        }
+        
+        const costoTotalEstimado = costoPorEmpaque * cant;
+        inputCostoCompra.value = Math.round(costoTotalEstimado); 
+    } else {
+        inputCostoCompra.value = '';
+    }
+};
+
+if (inputCantCompra) inputCantCompra.addEventListener('input', calcularCostoCompra);
+if (selectInsumoCompra) selectInsumoCompra.addEventListener('change', calcularCostoCompra);
+
 if (formCompra) {
     formCompra.onsubmit = async (e) => {
         e.preventDefault();
-        const idInsumo = document.getElementById('compra-insumo').value;
-        const paquetesRecibidos = Number(document.getElementById('compra-cant').value);
-        const inversionTotal = Number(document.getElementById('compra-costo').value);
+        const btn = formCompra.querySelector('button[type="submit"]');
+        btn.innerText = "Ingresando..."; btn.disabled = true;
+
+        const idInsumo = selectInsumoCompra.value;
+        const paquetesRecibidos = Number(inputCantCompra.value);
+        const inversionTotal = Number(inputCostoCompra.value);
+        
+        const inputCaducidad = document.getElementById('compra-caducidad');
+        const diasCaducidad = inputCaducidad ? inputCaducidad.value : null;
+
         const datosInsumo = insumosGlobales.find(i => i.id === idInsumo);
         const contenidoPorEmpaque = Number(datosInsumo.factor) || 1;
         const cantidadTotalIngresada = paquetesRecibidos * contenidoPorEmpaque;
         const nuevoCostoUnitario = inversionTotal / cantidadTotalIngresada;
+
+        let conceptoCompra = `Compra de ${paquetesRecibidos} empaque(s) de ${datosInsumo.nombre}`;
+        if (diasCaducidad) {
+            const fechaVence = new Date();
+            fechaVence.setDate(fechaVence.getDate() + Number(diasCaducidad));
+            conceptoCompra += ` | Vence aprox: ${fechaVence.toLocaleDateString()}`;
+        }
 
         try {
             await updateDoc(doc(db, "inventario", idInsumo), {
@@ -250,18 +374,16 @@ if (formCompra) {
                 costoUnitario: nuevoCostoUnitario
             });
             await addDoc(collection(db, "kardex"), {
-                insumoId: idInsumo,
-                tipo: 'entrada',
-                concepto: `Compra de ${paquetesRecibidos} empaque(s) de ${datosInsumo.nombre}`,
-                cantidad: cantidadTotalIngresada,
-                costoReferencia: inversionTotal,
-                timestamp: serverTimestamp()
+                insumoId: idInsumo, tipo: 'entrada', concepto: conceptoCompra, cantidad: cantidadTotalIngresada, costoReferencia: inversionTotal, timestamp: serverTimestamp()
             });
-            alert(`¡Ingreso exitoso! Se sumaron ${cantidadTotalIngresada.toLocaleString()} ${datosInsumo.unidad} a la bodega.`);
+            
+            mostrarNotificacion(`Ingreso exitoso: +${cantidadTotalIngresada.toLocaleString()} ${datosInsumo.unidad}`);
             cerrarModales();
         } catch (error) {
-            console.error("Error al registrar la compra:", error);
-            alert("Hubo un problema al guardar la compra. Revisa la conexión.");
+            console.error(error);
+            mostrarNotificacion("Error al registrar la compra.", "error");
+        } finally {
+            btn.innerText = "Ingresar"; btn.disabled = false;
         }
     };
 }
@@ -362,6 +484,7 @@ document.getElementById('m-form').onsubmit = async (e) => {
         const cant = Number(fila.querySelector('.receta-cantidad').value);
         if (insId && cant > 0) receta[insId] = cant;
     });
+    
     const datos = { 
         nombre: document.getElementById('name').value, 
         precio: Number(document.getElementById('price').value), 
@@ -371,9 +494,17 @@ document.getElementById('m-form').onsubmit = async (e) => {
         receta: receta,
         timestamp: serverTimestamp() 
     };
+    
     if(!id) datos.disponible = true;
-    id ? await updateDoc(doc(db, "platos", id), datos) : await addDoc(collection(db, "platos"), datos);
-    window.cancelarEdicion();
+    
+    try {
+        id ? await updateDoc(doc(doc(db, "platos", id)), datos) : await addDoc(collection(db, "platos"), datos);
+        mostrarNotificacion("Plato guardado con éxito");
+        window.cancelarEdicion();
+    } catch (error) {
+        console.error(error);
+        mostrarNotificacion("Error al guardar el plato", "error");
+    }
 };
 
 window.agregarFilaReceta = (insId = '', cant = '') => {
@@ -387,6 +518,27 @@ window.agregarFilaReceta = (insId = '', cant = '') => {
 };
 
 // --- 5. UTILIDADES Y GLOBALES ---
+// --- SISTEMA DE NOTIFICACIONES UI ---
+window.mostrarNotificacion = (mensaje, tipo = 'success') => {
+    const container = document.getElementById('iku-toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    const color = tipo === 'success' ? '#10b981' : '#ef4444'; // Verde o Rojo
+    const icono = tipo === 'success' ? '✅' : '❌';
+    
+    toast.style = `background: var(--card-dark, #1e293b); border-left: 4px solid ${color}; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 12px; transform: translateX(100%); transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0;`;
+    toast.innerHTML = `<span style="font-size: 1.2rem;">${icono}</span> <span>${mensaje}</span>`;
+    
+    container.appendChild(toast);
+    
+    // Animar entrada
+    setTimeout(() => { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; }, 10);
+    // Animar salida y borrar
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)'; toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
 window.editarInsumo = (id, n, s, u, m, c, f) => {
     document.getElementById('inv-id').value = id;
     document.getElementById('inv-name').value = decodeURIComponent(n);
@@ -407,7 +559,13 @@ window.toggleCategoria = (listaId, chevronId) => { const l = document.getElement
 window.actualizarSelectoresInsumos = () => { const opts = insumosGlobales.map(i => `<option value="${i.id}">${i.nombre}</option>`).join(''); document.getElementById('compra-insumo').innerHTML = opts; document.getElementById('merma-insumo').innerHTML = opts; };
 window.abrirModalCompra = () => { window.actualizarSelectoresInsumos(); document.getElementById('modal-compra').style.display = 'flex'; };
 window.abrirModalMerma = () => { window.actualizarSelectoresInsumos(); document.getElementById('modal-merma').style.display = 'flex'; };
-window.cerrarModales = () => { document.getElementById('modal-compra').style.display = 'none'; document.getElementById('modal-merma').style.display = 'none'; document.getElementById('f-compra')?.reset(); document.getElementById('f-merma')?.reset(); };
+window.cerrarModales = () => { 
+    document.getElementById('modal-compra').style.display = 'none'; 
+    document.getElementById('modal-merma').style.display = 'none'; 
+    if(document.getElementById('modal-balance')) document.getElementById('modal-balance').style.display = 'none';
+    document.getElementById('f-compra')?.reset(); 
+    document.getElementById('f-merma')?.reset(); 
+};
 window.imprimirComanda = (ps) => { const p = JSON.parse(decodeURIComponent(ps)); const div = document.createElement('div'); div.innerHTML = `<div id="ticket-impresion"><h2 style="text-align:center;">IKU</h2><hr><p><strong>Cliente:</strong> ${p.cliente}</p><hr><ul>${p.items.map(i => `<li>${i.nombre}</li>`).join('')}</ul><hr><h3 style="text-align:right;">Total: $${Number(p.total).toLocaleString()}</h3></div>`; document.body.appendChild(div); window.print(); document.body.removeChild(div); };
 window.confirmarReinicioTotal = () => { idParaEliminar = "MASTER"; document.getElementById('modal-title').innerText = '¿REINICIAR TODO?'; document.getElementById('delete-modal').style.display = 'flex'; };
 
@@ -416,12 +574,21 @@ window.confirmarAccionModal = async () => {
     const textoOriginal = btn.innerText;
     
     try {
-        btn.innerText = "Procesando..."; 
+        btn.innerText = "Limpiando Sistema..."; 
         btn.disabled = true;
 
         if (idParaEliminar === "MASTER") {
-            const ps = pedidosGlobales.map(p => deleteDoc(doc(db, "pedidos", p.id))); 
-            await Promise.all(ps);
+            // Lista de todas las colecciones que quieres limpiar
+            const coleccionesParaLimpiar = ["pedidos", "platos", "inventario", "kardex", "cierres"];
+            
+            for (const nombreCol of coleccionesParaLimpiar) {
+                const snap = await getDocs(collection(db, nombreCol));
+                const promesasBorrado = snap.docs.map(documento => deleteDoc(doc(db, nombreCol, documento.id)));
+                await Promise.all(promesasBorrado);
+            }
+            
+            mostrarNotificacion("Limpieza total completada. Sistema listo para el cliente.", "success");
+            
         } else if (idParaEliminar?.startsWith("RECHAZAR:")) {
             const pedidoId = idParaEliminar.split(":")[1];
             await updateDoc(doc(db, "pedidos", pedidoId), { estado: 'rechazado' });
@@ -436,8 +603,8 @@ window.confirmarAccionModal = async () => {
         document.getElementById('delete-modal').style.display = 'none';
 
     } catch (error) {
-        console.error("Error al ejecutar la acción:", error);
-        alert("Hubo un error al conectar con la base de datos.");
+        console.error("Error en el reinicio total:", error);
+        mostrarNotificacion("Hubo un fallo en la conexión con la base de datos", "error");
     } finally {
         btn.innerText = textoOriginal;
         btn.disabled = false;
@@ -479,5 +646,184 @@ window.generarCierreCaja = async () => {
             console.error("Error al guardar cierre:", error);
             alert("Error al guardar en la base de datos.");
         }
+        
     }
+};
+
+// --- 7. SECCIÓN DE BALANCE DIARIO, DESCARGA Y AJUSTE MANUAL ---
+let datosBalanceActual = [];
+
+window.volverInventario = () => {
+    // Busca el botón del menú de inventario y lo clickea para volver suavemente
+    const btnInventario = Array.from(document.querySelectorAll('.nav-item')).find(el => el.innerText.includes('Inventario'));
+    if (btnInventario) btnInventario.click();
+};
+
+window.actualizarStockFisico = async (idInsumo, nuevoStock, stockAnterior, nombreInsumo) => {
+    const nuevoVal = Number(nuevoStock);
+    const viejoVal = Number(stockAnterior);
+
+    if (nuevoVal === viejoVal) return; // Si no escribes nada nuevo, no hace nada
+
+    const diferencia = nuevoVal - viejoVal;
+    const tipoAjuste = diferencia > 0 ? 'entrada' : 'salida';
+    
+    try {
+        // 1. Actualizamos el número en la base de datos
+        await updateDoc(doc(db, "inventario", idInsumo), { stockActual: nuevoVal });
+        
+        // 2. Guardamos el rastro del ajuste manual para auditoría
+        await addDoc(collection(db, "kardex"), { 
+            insumoId: idInsumo, 
+            tipo: tipoAjuste, 
+            concepto: `Ajuste Físico (Manual). Valor anterior: ${viejoVal}`, 
+            cantidad: Math.abs(diferencia), 
+            timestamp: serverTimestamp() 
+        });
+
+        mostrarNotificacion(`✅ Stock de ${nombreInsumo} ajustado a ${nuevoVal}`);
+        abrirSeccionBalance(); // Recarga los números para que todo cuadre visualmente
+
+    } catch (error) {
+        console.error(error);
+        mostrarNotificacion("❌ Error al actualizar el inventario", "error");
+        abrirSeccionBalance(); // Revierte el input si falla el internet
+    }
+};
+
+window.abrirSeccionBalance = async () => {
+    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('v-balance').classList.add('active');
+    
+    const tbody = document.getElementById('tabla-balance-seccion');
+    if(!tbody) return;
+    
+    const filtro = document.getElementById('filtro-balance')?.value || 'hoy';
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color: var(--text-muted);">Calculando balance para: ${filtro.toUpperCase()}...</td></tr>`;
+    
+    const ahora = new Date();
+    let fechaInicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
+    let fechaFin = null;
+
+    // Lógica del filtro de fechas
+    if (filtro === 'ayer') {
+        fechaInicio.setDate(fechaInicio.getDate() - 1);
+        fechaFin = new Date(fechaInicio);
+        fechaFin.setHours(23, 59, 59, 999);
+    } else if (filtro === 'semana') {
+        fechaInicio.setDate(ahora.getDate() - 7);
+    } else if (filtro === 'mes') {
+        fechaInicio.setDate(1); // Día 1 de este mes
+    } else if (filtro === 'todo') {
+        fechaInicio = new Date(2020, 0, 1); // Desde que inició el mundo IKU
+    }
+    
+    try {
+        let balance = {}; 
+        insumosGlobales.forEach(insumo => {
+            balance[insumo.id] = { 
+                nombre: insumo.nombre, 
+                entradas: 0, salidas: 0, 
+                stockActual: insumo.stockActual || 0, 
+                unidad: insumo.unidad || '', 
+                id: insumo.id, activo: true 
+            };
+        });
+
+        // Hacemos el query a Firebase usando las fechas calculadas
+        let q;
+        if (fechaFin) {
+            q = query(collection(db, "kardex"), where("timestamp", ">=", fechaInicio), where("timestamp", "<=", fechaFin));
+        } else {
+            q = query(collection(db, "kardex"), where("timestamp", ">=", fechaInicio));
+        }
+        
+        const snap = await getDocs(q);
+        
+        snap.forEach(d => {
+            const mov = d.data();
+            if (balance[mov.insumoId]) {
+                if (mov.tipo === 'entrada') balance[mov.insumoId].entradas += Number(mov.cantidad);
+                if (mov.tipo === 'salida') balance[mov.insumoId].salidas += Number(mov.cantidad);
+            } else {
+                balance[mov.insumoId] = { 
+                    nombre: 'Insumo Eliminado', 
+                    entradas: mov.tipo === 'entrada' ? Number(mov.cantidad) : 0, 
+                    salidas: mov.tipo === 'salida' ? Number(mov.cantidad) : 0,
+                    stockActual: 0, unidad: '', id: mov.insumoId, activo: false
+                };
+            }
+        });
+
+        datosBalanceActual = Object.values(balance);
+
+        if (datosBalanceActual.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color: var(--text-muted);">No hay insumos en bodega.</td></tr>';
+            return;
+        }
+
+        let filasHTML = '';
+        datosBalanceActual.forEach(b => {
+            const isEliminado = !b.activo;
+            
+            // SEGURIDAD: Solo dejamos editar el stock físico si estamos viendo "Hoy"
+            let celdaStockEditable;
+            if (isEliminado) {
+                celdaStockEditable = `<span style="color: var(--danger)">Eliminado</span>`;
+            } else if (filtro === 'hoy') {
+                celdaStockEditable = `<input type="number" value="${b.stockActual}" onchange="actualizarStockFisico('${b.id}', this.value, ${b.stockActual}, '${b.nombre}')" style="width: 85px; padding: 6px; text-align: center; border-radius: 8px; border: 2px solid var(--border); background: #0f172a; color: var(--accent-yellow); font-weight: 800; font-size: 1.1rem; cursor: pointer;">`;
+            } else {
+                celdaStockEditable = `<span style="font-size: 1.1rem; font-weight: 800; color: var(--text-muted);">${b.stockActual}</span>`;
+            }
+
+            filasHTML += `
+    <tr class="responsive-row" style="border-bottom: 1px solid var(--border); transition: background 0.2s;">
+        <td data-label="Insumo" style="padding: 16px 12px; font-weight: 500; color: var(--white);">
+            ${b.nombre} <br><span style="font-size:0.65rem; color:var(--text-muted); text-transform: uppercase;">${b.unidad}</span>
+        </td>
+        <td data-label="Entradas (+)" style="padding: 16px 12px; text-align: center; color: #22c55e; font-weight: bold;">
+            ${b.entradas > 0 ? '+' : ''}${b.entradas.toLocaleString('es-CO')}
+        </td>
+        <td data-label="Salidas (-)" style="padding: 16px 12px; text-align: center; color: #ef4444; font-weight: bold;">
+            ${b.salidas > 0 ? '-' : ''}${b.salidas.toLocaleString('es-CO')}
+        </td>
+        <td data-label="Stock Final" style="padding: 16px 12px; text-align: right;">
+            ${celdaStockEditable}
+        </td>
+    </tr>
+`;
+        });
+        tbody.innerHTML = filasHTML;
+
+    } catch (error) {
+        console.error("Detalle del error:", error);
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color: var(--danger);">Error de conexión: ${error.message}</td></tr>`;
+    }
+};
+
+window.descargarBalanceCSV = () => {
+    if (datosBalanceActual.length === 0) {
+        alert("No hay movimientos para descargar en este periodo.");
+        return;
+    }
+
+    const filtro = document.getElementById('filtro-balance')?.value || 'hoy';
+    let csvContent = `Periodo: ${filtro.toUpperCase()}\n`;
+    csvContent += "Insumo,Unidad,Entradas,Salidas,Stock Final Actual en Bodega\n";
+    
+    datosBalanceActual.forEach(b => {
+        csvContent += `"${b.nombre}","${b.unidad}","${b.entradas}","${b.salidas}","${b.stockActual}"\n`;
+    });
+
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    const fechaActual = new Date().toLocaleDateString('es-CO').replace(/\//g, '-');
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Inventario_IKU_${filtro}_${fechaActual}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
