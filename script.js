@@ -140,7 +140,7 @@ function actualizarCarrito() {
 
 window.quitar = (i) => { carrito.splice(i, 1); actualizarCarrito(); };
 
-// --- ENVÍO DE PEDIDO ---
+// --- ENVÍO DE PEDIDO (SISTEMA INTERNO DIRECTO) ---
 window.enviarPedido = async () => {
     const cliente = document.getElementById('nombre-cliente')?.value;
     const tipo = document.getElementById('tipo-servicio')?.value;
@@ -160,45 +160,40 @@ window.enviarPedido = async () => {
             solicitarUbicacion();
             return;
         }
-        if (!validarRango()) return; // Detiene el envío si está fuera de rango
+        if (!validarRango()) return; 
     }
 
     const total = carrito.reduce((s, x) => s + (x.precio * x.cantidad), 0);
-    const linkMapa = ubicacionCliente ? `%0A📍 *Ubicación GPS:* https://www.google.com/maps?q=${ubicacionCliente.lat},${ubicacionCliente.lng}` : "";
-
-    // Formatear Ticket para WhatsApp
-    let msgWA = `*🧾 TICKET DE PEDIDO - IKU*%0A`;
-    msgWA += `*Cliente:* ${cliente}%0A`;
-    msgWA += `*Servicio:* ${tipo.toUpperCase()}%0A`;
-    msgWA += `--------------------------------%0A`;
-    carrito.forEach(i => {
-        msgWA += `*${i.cantidad}x* ${i.nombre}%0A`;
-        if(i.excluidos.length) msgWA += `    _SIN: ${i.excluidos.join(', ')}_%0A`;
-    });
-    msgWA += `--------------------------------%0A`;
-    msgWA += `*TOTAL:* $${total.toLocaleString()}${linkMapa}%0A%0A_Por favor, confirma para iniciar preparación._`;
 
     try {
         btn.innerText = "Enviando... ⏳";
+        btn.disabled = true; // Evita doble clic y pedidos duplicados
+
+        // Guarda el pedido directamente en la base de datos de Bahía
         const docRef = await addDoc(collection(db, "pedidos"), {
             cliente, tipo, total,
             items: carrito.flatMap(i => Array(i.cantidad).fill({ nombre: i.nombre, precio: i.precio, excluidos: i.excluidos })),
             estado: "pendiente", timestamp: serverTimestamp()
         });
 
-        window.open(`https://wa.me/573017177781?text=${msgWA}`);
+        // --- REMOVIDO EL ENVÍO AUTOMÁTICO A WHATSAPP ---
+        // Ahora el flujo es 100% digital dentro de la web.
 
+        // Limpieza de interfaz y activación del tracker en tiempo real
         carrito = [];
         actualizarCarrito();
         window.toggleCart();
+        
         btn.innerText = "CONFIRMAR PEDIDO";
-        iniciarTracker(docRef.id);
+        btn.disabled = false;
+        
+        iniciarTracker(docRef.id); // Abre el modal de "Recibido / En Cocina" de inmediato
     } catch (e) { 
-        console.error(e);
+        console.error("Error al registrar pedido:", e);
         btn.innerText = "Error ❌"; 
+        btn.disabled = false;
     }
 };
-
 // --- TRACKER Y CARGA DE MENÚ ---
 window.iniciarTracker = (id) => {
     document.getElementById('tracker-modal').classList.add('open');
