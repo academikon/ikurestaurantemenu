@@ -195,7 +195,7 @@ window.enviarPedido = async () => {
             msgWA += `--------------------------------%0A`;
             msgWA += `*TOTAL:* $${total.toLocaleString()}${linkMapa}%0A%0A_Por favor, confirma para iniciar preparación._`;
 
-            window.open(`https://wa.me/573017177781?text=${msgWA}`);
+            window.open(`https://wa.me/573023598579?text=${msgWA}`);
         }
 
         // Limpieza de carrito y despliegue del rastreador interno
