@@ -140,11 +140,15 @@ function actualizarCarrito() {
 
 window.quitar = (i) => { carrito.splice(i, 1); actualizarCarrito(); };
 
-// --- ENVÍO DE PEDIDO (SISTEMA INTERNO DIRECTO) ---
+// --- ENVÍO DE PEDIDO (CON WHATSAPP OPCIONAL) ---
 window.enviarPedido = async () => {
     const cliente = document.getElementById('nombre-cliente')?.value;
     const tipo = document.getElementById('tipo-servicio')?.value;
     const btn = document.querySelector('.btn-send-order');
+    
+    // DETECTAR SI EL USUARIO QUIERE O NO EL RESPALDO DE WHATSAPP
+    const checkWhatsapp = document.getElementById('check-whatsapp');
+    const quiereWhatsApp = checkWhatsapp ? checkWhatsapp.checked : false;
 
     // 1. VALIDACIONES BÁSICAS
     if (!cliente || carrito.length === 0) {
@@ -167,19 +171,34 @@ window.enviarPedido = async () => {
 
     try {
         btn.innerText = "Enviando... ⏳";
-        btn.disabled = true; // Evita doble clic y pedidos duplicados
+        btn.disabled = true; // Bloquea el botón para evitar duplicados
 
-        // Guarda el pedido directamente en la base de datos de Bahía
+        // Guardar el pedido directamente en tu base de datos de Firebase
         const docRef = await addDoc(collection(db, "pedidos"), {
             cliente, tipo, total,
             items: carrito.flatMap(i => Array(i.cantidad).fill({ nombre: i.nombre, precio: i.precio, excluidos: i.excluidos })),
             estado: "pendiente", timestamp: serverTimestamp()
         });
 
-        // --- REMOVIDO EL ENVÍO AUTOMÁTICO A WHATSAPP ---
-        // Ahora el flujo es 100% digital dentro de la web.
+        // SOLO SE ABRE SI EL CLIENTE DEJÓ ACTIVO EL CHECKBOX DE WHATSAPP
+        if (quiereWhatsApp) {
+            const linkMapa = ubicacionCliente ? `%0A📍 *Ubicación GPS:* https://www.google.com/maps?q=${ubicacionCliente.lat},${ubicacionCliente.lng}` : "";
+            
+            let msgWA = `*🧾 TICKET DE PEDIDO - BAHIA*%0A`;
+            msgWA += `*Cliente:* ${cliente}%0A`;
+            msgWA += `*Servicio:* ${tipo.toUpperCase()}%0A`;
+            msgWA += `--------------------------------%0A`;
+            carrito.forEach(i => {
+                msgWA += `*${i.cantidad}x* ${i.nombre}%0A`;
+                if(i.excluidos.length) msgWA += `    _SIN: ${i.excluidos.join(', ')}_%0A`;
+            });
+            msgWA += `--------------------------------%0A`;
+            msgWA += `*TOTAL:* $${total.toLocaleString()}${linkMapa}%0A%0A_Por favor, confirma para iniciar preparación._`;
 
-        // Limpieza de interfaz y activación del tracker en tiempo real
+            window.open(`https://wa.me/573017177781?text=${msgWA}`);
+        }
+
+        // Limpieza de carrito y despliegue del rastreador interno
         carrito = [];
         actualizarCarrito();
         window.toggleCart();
@@ -187,9 +206,9 @@ window.enviarPedido = async () => {
         btn.innerText = "CONFIRMAR PEDIDO";
         btn.disabled = false;
         
-        iniciarTracker(docRef.id); // Abre el modal de "Recibido / En Cocina" de inmediato
+        iniciarTracker(docRef.id);
     } catch (e) { 
-        console.error("Error al registrar pedido:", e);
+        console.error("Error al procesar el pedido:", e);
         btn.innerText = "Error ❌"; 
         btn.disabled = false;
     }
